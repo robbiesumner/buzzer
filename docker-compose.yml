@@ -1,0 +1,15 @@
+# Local container testing: the same image and the same one-replica shape.
+services:
+  buzzer:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Set to this machine's LAN IP to scan the join code with a phone.
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8000}
+      DATABASE_PATH: /data/buzzer.db
+      GM_PASSWORD: ${GM_PASSWORD:?set GM_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET, 32+ characters}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
