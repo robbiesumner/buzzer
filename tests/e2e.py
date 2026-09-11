@@ -18,7 +18,7 @@ from app.main import asgi
 playwright_api = pytest.importorskip("playwright.async_api")
 
 if TYPE_CHECKING:  # the import above is a runtime skip, not a dependency
-    from playwright.async_api import Browser, BrowserContext, Page
+    from playwright.async_api import Browser, BrowserContext, Page, ViewportSize
 
 
 @pytest.fixture
@@ -38,8 +38,8 @@ async def site() -> AsyncIterator[str]:
 
 #: The GM drives from a laptop and a player is on a phone, and those are two
 #: layouts. A test that does not pick one tests whichever Playwright defaults to.
-LAPTOP = {"width": 1440, "height": 900}
-PHONE = {"width": 390, "height": 844}
+LAPTOP: ViewportSize = {"width": 1440, "height": 900}
+PHONE: ViewportSize = {"width": 390, "height": 844}
 
 
 async def chromium(playwright: Any) -> Browser:
@@ -53,7 +53,7 @@ async def chromium(playwright: Any) -> Browser:
 async def open_room(
     browser: Browser,
     site_url: str,
-    viewport: dict[str, int] | None = None,
+    viewport: ViewportSize | None = None,
 ) -> tuple[Page, str]:
     from tests.conftest import GM_PASSWORD
 
