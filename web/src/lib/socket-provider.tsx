@@ -13,6 +13,9 @@ import {
   type BuzzRoundView,
   type ClientToServerEvents,
   type ParticipantView,
+  type PuzzleBoardView,
+  type PuzzleDraftView,
+  type PuzzleReviewView,
   type RoomView,
   type ServerToClientEvents,
   type StateSync,
@@ -38,6 +41,11 @@ interface SocketContextValue {
   presses: BuzzPressView[];
   timer: TimerView | null;
   expired: boolean;
+  /** GM only: the authored puzzles, and the results of the one being watched. */
+  puzzles: PuzzleDraftView[];
+  review: PuzzleReviewView | null;
+  /** Player only: this device's own dealt board. */
+  puzzle: PuzzleBoardView | null;
   /** A ref, not state: the buzzer reads it inside the click handler. */
   clock: React.RefObject<Clock>;
   error: string | null;
@@ -54,6 +62,9 @@ const SocketContext = createContext<SocketContextValue>({
   presses: [],
   timer: null,
   expired: false,
+  puzzles: [],
+  review: null,
+  puzzle: null,
   clock: { current: new Clock() },
   error: null,
   emit: () => {},
@@ -75,6 +86,9 @@ export function SocketProvider({ token, children }: { token: string; children: R
   const [presses, setPresses] = useState<BuzzPressView[]>([]);
   const [timer, setTimer] = useState<TimerView | null>(null);
   const [expired, setExpired] = useState(false);
+  const [puzzles, setPuzzles] = useState<PuzzleDraftView[]>([]);
+  const [review, setReview] = useState<PuzzleReviewView | null>(null);
+  const [puzzle, setPuzzle] = useState<PuzzleBoardView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const clock = useRef(new Clock());
   const roundId = useRef<string | null>(null);
@@ -125,6 +139,9 @@ export function SocketProvider({ token, children }: { token: string; children: R
       setPresses(payload.presses);
       setTimer(payload.timer);
       setExpired(payload.timer.state === "expired");
+      setPuzzles(payload.puzzles);
+      setReview(payload.review);
+      setPuzzle(payload.puzzle);
     });
     next.on("room:update", setRoom);
     next.on("participants:update", setParticipants);
@@ -162,6 +179,15 @@ export function SocketProvider({ token, children }: { token: string; children: R
     });
     next.on("timer:expired", () => setExpired(true));
 
+    next.on("puzzle:list", setPuzzles);
+    next.on("puzzle:review", setReview);
+    // One board per device: this arrives addressed to this socket, never to the
+    // room, because every participant holds a different shuffle.
+    next.on("puzzle:board", setPuzzle);
+    next.on("puzzle:cleared", ({ puzzleId }) =>
+      setPuzzle((current) => (current && current.puzzleId !== puzzleId ? current : null)),
+    );
+
     next.on("error", (payload) => setError(payload.code));
 
     return () => {
@@ -196,6 +222,9 @@ export function SocketProvider({ token, children }: { token: string; children: R
       presses,
       timer,
       expired,
+      puzzles,
+      review,
+      puzzle,
       clock,
       error,
       emit,
@@ -210,6 +239,9 @@ export function SocketProvider({ token, children }: { token: string; children: R
       presses,
       timer,
       expired,
+      puzzles,
+      review,
+      puzzle,
       error,
       emit,
     ],

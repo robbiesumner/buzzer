@@ -4,6 +4,7 @@ import { Buzzer } from "@/components/buzzer";
 import { ConnectionBadge } from "@/components/connection-badge";
 import { TimerHeader } from "@/components/countdown";
 import { LanguageSwitch } from "@/components/language-switch";
+import { PuzzleBoard } from "@/components/puzzle-board";
 import { Standings } from "@/components/standings";
 import { Button, Card, Heading, Label, RoomCode, Screen, SectionHeader } from "@/components/ui";
 import { SocketProvider, useSocket } from "@/lib/socket-provider";
@@ -31,7 +32,7 @@ export function PlayRoute() {
 
 function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => void }) {
   const navigate = useNavigate();
-  const { room, participants, round } = useSocket();
+  const { room, participants, round, puzzle } = useSocket();
   const strings = t().lobby;
   const scoreboard = t().scoreboard;
 
@@ -47,7 +48,7 @@ function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => vo
 
   return (
     <Screen width="panel">
-      <Heading title={strings.title} subtitle={round ? undefined : strings.waiting} />
+      <Heading title={strings.title} subtitle={round || puzzle ? undefined : strings.waiting} />
       <ConnectionBadge />
 
       {/* Two columns on anything wider than a phone, and the split is by how
@@ -59,6 +60,14 @@ function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => vo
         <div className="flex flex-col gap-8">
           {/* The clock first: it is the thing with a deadline on it. */}
           <TimerHeader />
+
+          {/* Above the buzzer while it is live, because it is the thing being
+              touched; absent entirely the rest of the time. */}
+          {puzzle ? (
+            <Card>
+              <PuzzleBoard />
+            </Card>
+          ) : null}
 
           {/* The buzzer sits above everything scrollable, in the thumb zone. */}
           <Card>

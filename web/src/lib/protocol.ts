@@ -32,6 +32,14 @@ export const CLOCK_PING_BURST_GAP_MS = 50;
 
 export const TIMER_MAX_MS = 6 * 60 * 60 * 1000;
 export const TIMER_ADD_MS = 30000;
+export const PUZZLE_TITLE_MAX = 60;
+export const PUZZLE_WORD_MAX = 40;
+/** Two pairs is the smallest pool that can be got wrong; eight is twelve rows
+ *  short of a scroll hunt on a phone, at sixteen words. */
+export const PUZZLE_MIN_PAIRS = 2;
+export const PUZZLE_MAX_PAIRS = 8;
+export const PUZZLE_MAX_PER_ROOM = 20;
+
 export const TIMER_PRESETS_MS = [15000, 30000, 60000, 120000, 300000] as const;
 export const TIMER_WARN_MS = 10000;
 
@@ -53,6 +61,7 @@ export function normaliseLabel(value: string): string | null {
 
 export type Role = "gm" | "player";
 export type TimerState = "idle" | "running" | "paused" | "expired";
+export type PuzzleStatus = "draft" | "live" | "closed";
 
 export const SOCKET_ERRORS = {
   no_token: "no_token",
@@ -70,6 +79,10 @@ export const EVENT_ERRORS = {
   nothing_to_undo: "nothing_to_undo",
   locked: "locked",
   no_round: "no_round",
+  unknown_puzzle: "unknown_puzzle",
+  /** Sent to a puzzle that is not taking answers, or an edit to one already sent. */
+  puzzle_locked: "puzzle_locked",
+  too_many_puzzles: "too_many_puzzles",
 } as const;
 
 export type EventErrorCode = keyof typeof EVENT_ERRORS;
@@ -139,6 +152,82 @@ export interface TimerView {
   serverNow: number;
 }
 
+/** The key. The game master always has it; a player only once the puzzle closed. */
+export interface PuzzlePairView {
+  first: string;
+  second: string;
+}
+
+export interface PuzzleDraftView {
+  id: string;
+  title: string;
+  status: PuzzleStatus;
+  position: number;
+  pairs: PuzzlePairView[];
+  submissionCount: number;
+}
+
+/**
+ * One dealt word. `slotId` is opaque: the id of the slot holding this word for
+ * this participant, not of the pair it came from — which is what keeps the key
+ * off the wire.
+ */
+export interface PuzzleSlotView {
+  slotId: string;
+  word: string;
+}
+
+/** Two slots that belong together. Unordered: which is which means nothing. */
+export interface PuzzleMatchView {
+  slotId: string;
+  partnerSlotId: string;
+}
+
+/** `cards` is the whole pool; `arrangement` is the pairing so far — every slot
+ *  id, read two at a time, which is what the dragging rearranges. */
+export interface PuzzleBoardView {
+  puzzleId: string;
+  title: string;
+  status: PuzzleStatus;
+  cards: PuzzleSlotView[];
+  arrangement: string[];
+  submitted: boolean;
+  submittedAt: number | null;
+  total: number;
+  /** Both null until the puzzle closes: a score is a hint, the key is the answer. */
+  correct: number | null;
+  key: PuzzleMatchView[] | null;
+}
+
+/** One pair the participant made. `expected` is what `first` belonged with, and
+ *  is only worth reading when the pair is wrong. */
+export interface PuzzleAnswerView {
+  first: string;
+  second: string;
+  expected: string;
+  correct: boolean;
+}
+
+export interface PuzzleSubmissionView {
+  participantId: string;
+  name: string;
+  submittedAt: number;
+  correct: number;
+  total: number;
+  answers: PuzzleAnswerView[];
+}
+
+export interface PuzzleReviewView {
+  puzzleId: string;
+  title: string;
+  status: PuzzleStatus;
+  total: number;
+  pairs: PuzzlePairView[];
+  submissions: PuzzleSubmissionView[];
+  /** Who has not answered yet, so the game master knows whether to wait. */
+  pending: string[];
+}
+
 export interface StateSync {
   room: RoomView;
   participants: ParticipantView[];
@@ -149,6 +238,11 @@ export interface StateSync {
   round: BuzzRoundView | null;
   presses: BuzzPressView[];
   timer: TimerView;
+  /** Game master only: the authored puzzles, and the results being watched. */
+  puzzles: PuzzleDraftView[];
+  review: PuzzleReviewView | null;
+  /** Player only: their own dealt board, when a puzzle is live. */
+  puzzle: PuzzleBoardView | null;
   serverNow: number;
 }
 
@@ -200,6 +294,36 @@ export interface TimerAddTime {
   deltaMs: number;
 }
 
+/** `first` and `second` are a writing order and nothing more: the player is
+ *  handed both loose, in one pool. */
+export interface PuzzlePairInput {
+  first: string;
+  second: string;
+}
+
+export interface PuzzleCreate {
+  title: string;
+  pairs: PuzzlePairInput[];
+}
+
+export interface PuzzleUpdate {
+  puzzleId: string;
+  title: string;
+  pairs: PuzzlePairInput[];
+}
+
+/** `puzzle:delete`, `puzzle:send` and `puzzle:close` all name one puzzle. */
+export interface PuzzleId {
+  puzzleId: string;
+}
+
+/** The pool in the order the player has put it in, read two at a time: every
+ *  card used exactly once, which is the only arrangement the server accepts. */
+export interface PuzzleSubmit {
+  puzzleId: string;
+  arrangement: string[];
+}
+
 export interface ClientToServerEvents {
   "clock:ping": (payload: ClockPing) => void;
   "buzz:press": (payload: BuzzPress) => void;
@@ -215,6 +339,12 @@ export interface ClientToServerEvents {
   "timer:resume": () => void;
   "timer:reset": () => void;
   "timer:addTime": (payload: TimerAddTime) => void;
+  "puzzle:create": (payload: PuzzleCreate) => void;
+  "puzzle:update": (payload: PuzzleUpdate) => void;
+  "puzzle:delete": (payload: PuzzleId) => void;
+  "puzzle:send": (payload: PuzzleId) => void;
+  "puzzle:close": (payload: PuzzleId) => void;
+  "puzzle:submit": (payload: PuzzleSubmit) => void;
 }
 
 export interface ServerToClientEvents {
@@ -228,5 +358,9 @@ export interface ServerToClientEvents {
   "buzz:cleared": (payload: { roundId: string }) => void;
   "timer:update": (payload: TimerView) => void;
   "timer:expired": (payload: { label: string | null }) => void;
+  "puzzle:list": (payload: PuzzleDraftView[]) => void;
+  "puzzle:board": (payload: PuzzleBoardView) => void;
+  "puzzle:cleared": (payload: { puzzleId: string }) => void;
+  "puzzle:review": (payload: PuzzleReviewView) => void;
   error: (payload: { code: EventErrorCode | string; message: string }) => void;
 }

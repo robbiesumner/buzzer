@@ -14,6 +14,7 @@ from typing import Any
 import socketio
 from pydantic import ValidationError
 
+from app import puzzles
 from app.auth import SessionClaims, verify_token
 from app.buzz import (
     arm_round,
@@ -38,6 +39,13 @@ from app.protocol import (
     NoPayload,
     ParticipantView,
     Payload,
+    PuzzleBoardView,
+    PuzzleCreate,
+    PuzzleDraftView,
+    PuzzleId,
+    PuzzleReviewView,
+    PuzzleSubmit,
+    PuzzleUpdate,
     Role,
     ScoreAdjust,
     ScoreUndo,
@@ -184,6 +192,37 @@ async def broadcast_timer(room_id: str, timer: TimerView) -> None:
     await sio.emit("timer:update", timer.model_dump(), room=room_channel(room_id))
 
 
+async def broadcast_puzzles(room_id: str) -> None:
+    """The authored list, keys and all, so only the GM channel ever sees it."""
+    views = [view.model_dump() for view in puzzles.draft_views(room_id)]
+    await sio.emit("puzzle:list", views, room=gm_channel(room_id))
+
+
+async def broadcast_review(room_id: str) -> None:
+    review = puzzles.review_for_room(room_id)
+    if review is None:
+        return
+    await sio.emit("puzzle:review", review.model_dump(), room=gm_channel(room_id))
+
+
+async def _emit_board(participant_id: str, board: PuzzleBoardView) -> None:
+    """Per participant, not per room: every board is a different shuffle, and a
+    closed one carries that person's own score."""
+    for sid in list(_sockets_by_participant.get(participant_id, ())):
+        await sio.emit("puzzle:board", board.model_dump(), to=sid)
+
+
+async def deal_boards(puzzle: puzzles.Puzzle) -> None:
+    for participant in list_participants(puzzle.room_id):
+        board = puzzles.board(puzzle.id, participant.id)
+        if board is not None:
+            await _emit_board(participant.id, board)
+
+
+async def broadcast_cleared(room_id: str, puzzle_id: str) -> None:
+    await sio.emit("puzzle:cleared", {"puzzleId": puzzle_id}, room=player_channel(room_id))
+
+
 async def _refuse(sid: str, code: str) -> None:
     await sio.emit("error", {"code": code, "message": EVENT_ERRORS[code]}, to=sid)
 
@@ -309,6 +348,20 @@ def build_state_sync(claims: SessionClaims, name: str | None) -> StateSync | Non
     if room is None:
         return None
 
+    # Split by role rather than redacted afterwards: the GM half carries the
+    # answer key, and a player must not be sent it and trusted not to look.
+    drafts: list[PuzzleDraftView] = []
+    review: PuzzleReviewView | None = None
+    board: PuzzleBoardView | None = None
+    if claims.role == "gm":
+        drafts = puzzles.draft_views(room.id)
+        review = puzzles.review_for_room(room.id)
+    elif claims.participant_id is not None:
+        # Dealt here as well as on send, which is how somebody who joins in the
+        # middle of a puzzle still gets a board.
+        live = puzzles.current_puzzle(room.id)
+        board = puzzles.board(live.id, claims.participant_id) if live is not None else None
+
     buzz_round = get_current_round(room)
     presses: list[BuzzPressView] = [] if buzz_round is None else list_presses(buzz_round.id)
     timer = get_timer(room.id)
@@ -321,6 +374,9 @@ def build_state_sync(claims: SessionClaims, name: str | None) -> StateSync | Non
         round=buzz_round.view() if buzz_round else None,
         presses=presses,
         timer=timer,
+        puzzles=drafts,
+        review=review,
+        puzzle=board,
         serverNow=now_ms(),
     )
 
@@ -483,6 +539,84 @@ async def on_timer_add_time(sid: str, claims: SessionClaims, payload: TimerAddTi
     await _apply_timer(claims.room_id, add_time(claims.room_id, payload.deltaMs))
 
 
+async def on_puzzle_create(sid: str, claims: SessionClaims, payload: PuzzleCreate) -> None:
+    created = puzzles.create_puzzle(claims.room_id, payload.title, payload.pairs)
+    if isinstance(created, str):
+        await _refuse(sid, created)
+        return
+    await broadcast_puzzles(claims.room_id)
+
+
+async def on_puzzle_update(sid: str, claims: SessionClaims, payload: PuzzleUpdate) -> None:
+    updated = puzzles.update_puzzle(
+        claims.room_id, payload.puzzleId, payload.title, payload.pairs
+    )
+    if isinstance(updated, str):
+        await _refuse(sid, updated)
+        return
+    await broadcast_puzzles(claims.room_id)
+
+
+async def on_puzzle_delete(sid: str, claims: SessionClaims, payload: PuzzleId) -> None:
+    deleted = puzzles.delete_puzzle(claims.room_id, payload.puzzleId)
+    if isinstance(deleted, str):
+        await _refuse(sid, deleted)
+        return
+    # Deleting the live one takes it off the phones holding it.
+    if deleted.status == "live":
+        await broadcast_cleared(claims.room_id, deleted.id)
+    await broadcast_puzzles(claims.room_id)
+    await broadcast_review(claims.room_id)
+
+
+async def on_puzzle_send(sid: str, claims: SessionClaims, payload: PuzzleId) -> None:
+    sent = puzzles.send_puzzle(claims.room_id, payload.puzzleId)
+    if isinstance(sent, str):
+        await _refuse(sid, sent)
+        return
+    puzzle, _previous = sent
+    # The new board replaces whatever the phone was holding, so the puzzle it
+    # displaced needs no clearing event of its own.
+    await deal_boards(puzzle)
+    await broadcast_puzzles(claims.room_id)
+    await broadcast_review(claims.room_id)
+
+
+async def on_puzzle_close(sid: str, claims: SessionClaims, payload: PuzzleId) -> None:
+    closed = puzzles.close_puzzle(claims.room_id, payload.puzzleId)
+    if isinstance(closed, str):
+        await _refuse(sid, closed)
+        return
+    # Re-dealt rather than merely cleared: closing is the reveal, and this is
+    # the board carrying each player their own score and the key.
+    await deal_boards(closed)
+    await broadcast_puzzles(claims.room_id)
+    await broadcast_review(claims.room_id)
+
+
+async def on_puzzle_submit(
+    sid: str, claims: SessionClaims, participant_id: str, payload: PuzzleSubmit
+) -> None:
+    puzzle = puzzles.get_puzzle(payload.puzzleId)
+    if puzzle is None or puzzle.room_id != claims.room_id:
+        await _refuse(sid, "unknown_puzzle")
+        return
+
+    graded = puzzles.submit(puzzle.id, participant_id, payload.arrangement)
+    if isinstance(graded, str):
+        await _refuse(sid, graded)
+        return
+
+    # Back to the one device, without the score: the answer is stored, and how
+    # much of it was right waits for the close.
+    board = puzzles.board(puzzle.id, participant_id)
+    if board is not None:
+        await _emit_board(participant_id, board)
+    # Both: the review is the answers, and the list row counts them.
+    await broadcast_puzzles(claims.room_id)
+    await broadcast_review(claims.room_id)
+
+
 async def on_disconnect(sid: str, reason: Any = None) -> None:
     session = await sio.get_session(sid)
     claims = session.get("claims") if session else None
@@ -511,3 +645,9 @@ sio.on("timer:pause", gm_event(NoPayload, on_timer_pause))
 sio.on("timer:resume", gm_event(NoPayload, on_timer_resume))
 sio.on("timer:reset", gm_event(NoPayload, on_timer_reset))
 sio.on("timer:addTime", gm_event(TimerAddTime, on_timer_add_time))
+sio.on("puzzle:create", gm_event(PuzzleCreate, on_puzzle_create))
+sio.on("puzzle:update", gm_event(PuzzleUpdate, on_puzzle_update))
+sio.on("puzzle:delete", gm_event(PuzzleId, on_puzzle_delete))
+sio.on("puzzle:send", gm_event(PuzzleId, on_puzzle_send))
+sio.on("puzzle:close", gm_event(PuzzleId, on_puzzle_close))
+sio.on("puzzle:submit", player_event(PuzzleSubmit, on_puzzle_submit))

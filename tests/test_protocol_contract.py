@@ -70,6 +70,14 @@ def test_timer_limits_match() -> None:
     assert eval(ts_constant("TIMER_MAX_MS")) == protocol.TIMER_MAX_MS
 
 
+def test_puzzle_limits_match() -> None:
+    assert ts_constant("PUZZLE_TITLE_MAX") == str(protocol.PUZZLE_TITLE_MAX)
+    assert ts_constant("PUZZLE_WORD_MAX") == str(protocol.PUZZLE_WORD_MAX)
+    assert ts_constant("PUZZLE_MIN_PAIRS") == str(protocol.PUZZLE_MIN_PAIRS)
+    assert ts_constant("PUZZLE_MAX_PAIRS") == str(protocol.PUZZLE_MAX_PAIRS)
+    assert ts_constant("PUZZLE_MAX_PER_ROOM") == str(protocol.PUZZLE_MAX_PER_ROOM)
+
+
 def test_error_codes_match() -> None:
     assert ts_code_block("SOCKET_ERRORS") == set(protocol.SOCKET_ERRORS)
     assert ts_code_block("EVENT_ERRORS") == set(protocol.EVENT_ERRORS)
@@ -101,6 +109,19 @@ def test_event_names_match() -> None:
         protocol.TimerSet,
         protocol.TimerAddTime,
         protocol.TimerView,
+        protocol.PuzzlePairInput,
+        protocol.PuzzleCreate,
+        protocol.PuzzleUpdate,
+        protocol.PuzzleId,
+        protocol.PuzzleSubmit,
+        protocol.PuzzlePairView,
+        protocol.PuzzleDraftView,
+        protocol.PuzzleSlotView,
+        protocol.PuzzleMatchView,
+        protocol.PuzzleBoardView,
+        protocol.PuzzleAnswerView,
+        protocol.PuzzleSubmissionView,
+        protocol.PuzzleReviewView,
     ],
 )
 def test_view_model_fields_match(model: type[BaseModel]) -> None:

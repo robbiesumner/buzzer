@@ -93,4 +93,86 @@ MIGRATIONS: list[Migration] = [
             ON buzz_presses(round_id, participant_id);
         """,
     ),
+    Migration(
+        id="0002_puzzles",
+        sql="""
+        -- A puzzle is authored as a list of pairs, which is also its answer key.
+        -- `position` is authoring order; `status` walks draft -> live -> closed.
+        CREATE TABLE puzzles (
+            id         TEXT PRIMARY KEY,
+            room_id    TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+            title      TEXT NOT NULL,
+            position   INTEGER NOT NULL,
+            status     TEXT NOT NULL DEFAULT 'draft',
+            created_at INTEGER NOT NULL,
+            sent_at    INTEGER,
+            closed_at  INTEGER
+        );
+
+        CREATE INDEX puzzles_room ON puzzles(room_id, position ASC);
+
+        -- Two words that belong together. They are peers, not a question and an
+        -- answer: every word in a puzzle comes from the same category, and the
+        -- game is spotting which two go together, so `first` and `second` are
+        -- only a writing order and mean nothing to the player.
+        CREATE TABLE puzzle_pairs (
+            id          TEXT PRIMARY KEY,
+            puzzle_id   TEXT NOT NULL REFERENCES puzzles(id) ON DELETE CASCADE,
+            first_word  TEXT NOT NULL,
+            second_word TEXT NOT NULL,
+            position    INTEGER NOT NULL
+        );
+
+        CREATE INDEX puzzle_pairs_puzzle ON puzzle_pairs(puzzle_id, position ASC);
+
+        -- One dealt pool per participant: every word of the puzzle, shuffled
+        -- together. `half` says which word of its pair this slot carries; the id
+        -- is the only handle the browser is given, and nothing about it says
+        -- which other slot shares its pair.
+        CREATE TABLE puzzle_slots (
+            id             TEXT PRIMARY KEY,
+            puzzle_id      TEXT NOT NULL REFERENCES puzzles(id) ON DELETE CASCADE,
+            participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+            pair_id        TEXT NOT NULL REFERENCES puzzle_pairs(id) ON DELETE CASCADE,
+            half           INTEGER NOT NULL,   -- 0 = first_word, 1 = second_word
+            position       INTEGER NOT NULL    -- this participant's shuffle
+        );
+
+        CREATE UNIQUE INDEX puzzle_slots_deal
+            ON puzzle_slots(puzzle_id, participant_id, pair_id, half);
+        CREATE INDEX puzzle_slots_pool
+            ON puzzle_slots(puzzle_id, participant_id, position ASC);
+
+        CREATE TABLE puzzle_submissions (
+            id             TEXT PRIMARY KEY,
+            puzzle_id      TEXT NOT NULL REFERENCES puzzles(id) ON DELETE CASCADE,
+            participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+            submitted_at   INTEGER NOT NULL,
+            correct        INTEGER NOT NULL,
+            total          INTEGER NOT NULL
+        );
+
+        CREATE UNIQUE INDEX puzzle_submissions_participant
+            ON puzzle_submissions(puzzle_id, participant_id);
+
+        -- The pairing as submitted, one row per pair the participant made, so
+        -- the review shows what they put together and not merely how much of it
+        -- was right. Which slot is `a` and which is `b` is meaningless: a pair
+        -- is right when both slots came from the same authored pair.
+        CREATE TABLE puzzle_answers (
+            id            TEXT PRIMARY KEY,
+            submission_id TEXT NOT NULL REFERENCES puzzle_submissions(id) ON DELETE CASCADE,
+            slot_a_id     TEXT NOT NULL REFERENCES puzzle_slots(id) ON DELETE CASCADE,
+            slot_b_id     TEXT NOT NULL REFERENCES puzzle_slots(id) ON DELETE CASCADE,
+            position      INTEGER NOT NULL,
+            correct       INTEGER NOT NULL
+        );
+
+        CREATE UNIQUE INDEX puzzle_answers_slot ON puzzle_answers(submission_id, slot_a_id);
+
+        -- Points forward, like `current_round_id`: the one puzzle on the room's
+        -- phones right now, NULL when there is none.
+        ALTER TABLE rooms ADD COLUMN current_puzzle_id TEXT REFERENCES puzzles(id);
+        """,
+    ),
 ]

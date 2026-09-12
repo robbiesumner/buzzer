@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ConnectionBadge } from "@/components/connection-badge";
 import { GmBuzzer } from "@/components/gm-buzzer";
+import { GmPuzzleReview } from "@/components/gm-puzzle-review";
+import { GmPuzzles } from "@/components/gm-puzzles";
 import { GmScoreboard, ScoreVisibilityToggle } from "@/components/gm-scoreboard";
 import { GmTimerBar } from "@/components/gm-timer";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -46,7 +48,7 @@ export function GmRoomRoute() {
   );
 }
 
-type TabId = "participants" | "buzzer";
+type TabId = "participants" | "buzzer" | "puzzles";
 
 function GmLobby({ session, onSignOut }: { session: StoredSession; onSignOut: () => void }) {
   const navigate = useNavigate();
@@ -138,6 +140,15 @@ function WideSections({ participants }: { participants: number }) {
         <GmBuzzer />
       </Panel>
 
+      {/* The second row is one feature across two panels: what the room was
+          sent on the left, what came back on the right. */}
+      <Panel label={strings.puzzles.title} scroll>
+        <GmPuzzles />
+      </Panel>
+
+      <Panel label={strings.puzzles.results} scroll>
+        <GmPuzzleReview />
+      </Panel>
     </div>
   );
 }
@@ -150,6 +161,7 @@ function TabbedSections({ participants }: { participants: number }) {
   const tabs = [
     { id: "participants" as const, label: strings.tabs.participants },
     { id: "buzzer" as const, label: strings.tabs.buzzer },
+    { id: "puzzles" as const, label: strings.tabs.puzzles },
   ];
 
   return (
@@ -162,8 +174,15 @@ function TabbedSections({ participants }: { participants: number }) {
             <GmScoreboard />
             <ScoreVisibilityToggle />
           </>
-        ) : (
+        ) : tab === "buzzer" ? (
           <GmBuzzer />
+        ) : (
+          /* One column on a phone, so the results follow the list rather than
+             sitting beside it. */
+          <div className="space-y-8">
+            <GmPuzzles />
+            <GmPuzzleReview />
+          </div>
         )}
       </Card>
     </>

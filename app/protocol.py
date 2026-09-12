@@ -32,8 +32,17 @@ BUZZ_SAMPLE_WINDOW = 15
 TIMER_MAX_MS = 6 * 60 * 60 * 1000
 TIMER_ADD_MS = 30_000
 
+PUZZLE_TITLE_MAX = 60
+PUZZLE_WORD_MAX = 40
+# Two pairs is the smallest pool that can be got wrong; eight is twelve rows
+# short of a scroll hunt on a phone, at sixteen words.
+PUZZLE_MIN_PAIRS = 2
+PUZZLE_MAX_PAIRS = 8
+PUZZLE_MAX_PER_ROOM = 20
+
 Role = Literal["gm", "player"]
 TimerState = Literal["idle", "running", "paused", "expired"]
+PuzzleStatus = Literal["draft", "live", "closed"]
 
 SOCKET_ERRORS = {
     "no_token": "no_token",
@@ -49,6 +58,10 @@ EVENT_ERRORS = {
     "nothing_to_undo": "nothing_to_undo",
     "locked": "locked",
     "no_round": "no_round",
+    "unknown_puzzle": "unknown_puzzle",
+    # Sent to a puzzle that is not taking answers, or an edit to one already sent.
+    "puzzle_locked": "puzzle_locked",
+    "too_many_puzzles": "too_many_puzzles",
 }
 
 # Listed so the contract test can hold both languages to the same strings: a
@@ -69,6 +82,12 @@ CLIENT_EVENTS = frozenset(
         "timer:resume",
         "timer:reset",
         "timer:addTime",
+        "puzzle:create",
+        "puzzle:update",
+        "puzzle:delete",
+        "puzzle:send",
+        "puzzle:close",
+        "puzzle:submit",
     }
 )
 
@@ -84,6 +103,10 @@ SERVER_EVENTS = frozenset(
         "buzz:cleared",
         "timer:update",
         "timer:expired",
+        "puzzle:list",
+        "puzzle:board",
+        "puzzle:cleared",
+        "puzzle:review",
         "error",
     }
 )
@@ -311,6 +334,164 @@ class TimerView(Payload):
     serverNow: int  # noqa: N815
 
 
+def normalise_title(value: str) -> str:
+    title = value.strip()
+    if not title:
+        raise ValueError("title required")
+    if len(title) > PUZZLE_TITLE_MAX:
+        raise ValueError("title too long")
+    return title
+
+
+def normalise_word(value: str) -> str:
+    word = " ".join(value.split())
+    if not word:
+        raise ValueError("word required")
+    if len(word) > PUZZLE_WORD_MAX:
+        raise ValueError("word too long")
+    return word
+
+
+class PuzzlePairInput(Payload):
+    """Two words that belong together. `first` and `second` are a writing order
+    and nothing more: the player is handed both loose, in one pool."""
+
+    first: str
+    second: str
+
+    @field_validator("first", "second")
+    @classmethod
+    def _word(cls, value: str) -> str:
+        return normalise_word(value)
+
+
+def _validated_pairs(pairs: list[PuzzlePairInput]) -> list[PuzzlePairInput]:
+    """Every word in the pool is checked against every other, not column against
+    column: the words are all of one kind, and a word appearing twice would make
+    two pairings equally right with only one of them scored."""
+    if not PUZZLE_MIN_PAIRS <= len(pairs) <= PUZZLE_MAX_PAIRS:
+        raise ValueError("wrong number of pairs")
+
+    pool = [word.casefold() for pair in pairs for word in (pair.first, pair.second)]
+    if len(set(pool)) != len(pool):
+        raise ValueError("duplicate word")
+    return pairs
+
+
+class PuzzleCreate(Payload):
+    title: str
+    pairs: list[PuzzlePairInput]
+
+    @field_validator("title")
+    @classmethod
+    def _title(cls, value: str) -> str:
+        return normalise_title(value)
+
+    @field_validator("pairs")
+    @classmethod
+    def _pairs(cls, value: list[PuzzlePairInput]) -> list[PuzzlePairInput]:
+        return _validated_pairs(value)
+
+
+class PuzzleUpdate(PuzzleCreate):
+    puzzleId: str  # noqa: N815
+
+
+class PuzzleId(Payload):
+    """`puzzle:delete`, `puzzle:send` and `puzzle:close` all name one puzzle."""
+
+    puzzleId: str  # noqa: N815
+
+
+class PuzzleSubmit(Payload):
+    """The left column is the server's own order, so an answer is just the right
+    cards read top to bottom — one id per row, every card used exactly once."""
+
+    puzzleId: str  # noqa: N815
+    arrangement: list[str]
+
+
+class PuzzlePairView(Payload):
+    """The key. Sent to the game master, and to a player only once the puzzle is
+    closed and there is nothing left to spoil."""
+
+    first: str
+    second: str
+
+
+class PuzzleDraftView(Payload):
+    id: str
+    title: str
+    status: PuzzleStatus
+    position: int
+    pairs: list[PuzzlePairView]
+    submissionCount: int  # noqa: N815
+
+
+class PuzzleSlotView(Payload):
+    """One dealt word. `slotId` is opaque: the id of the slot holding this word
+    for this participant, not the id of the pair it came from."""
+
+    slotId: str  # noqa: N815
+    word: str
+
+
+class PuzzleMatchView(Payload):
+    """Two slots that belong together. Unordered: which is which means nothing."""
+
+    slotId: str  # noqa: N815
+    partnerSlotId: str  # noqa: N815
+
+
+class PuzzleBoardView(Payload):
+    """What one participant's phone holds: the whole pool in `cards`, and the
+    pairing so far in `arrangement` — every slot id, read two at a time, which
+    is what the dragging rearranges."""
+
+    puzzleId: str  # noqa: N815
+    title: str
+    status: PuzzleStatus
+    cards: list[PuzzleSlotView]
+    arrangement: list[str]
+    submitted: bool
+    submittedAt: int | None  # noqa: N815
+    total: int
+    # Both withheld until the puzzle closes: a score is a hint, and the key is
+    # the whole answer.
+    correct: int | None
+    key: list[PuzzleMatchView] | None
+
+
+class PuzzleAnswerView(Payload):
+    """One pair the participant made. `expected` is what `first` belonged with,
+    and is only worth reading when the pair is wrong."""
+
+    first: str
+    second: str
+    expected: str
+    correct: bool
+
+
+class PuzzleSubmissionView(Payload):
+    participantId: str  # noqa: N815
+    name: str
+    submittedAt: int  # noqa: N815
+    correct: int
+    total: int
+    answers: list[PuzzleAnswerView]
+
+
+class PuzzleReviewView(Payload):
+    puzzleId: str  # noqa: N815
+    title: str
+    status: PuzzleStatus
+    total: int
+    pairs: list[PuzzlePairView]
+    submissions: list[PuzzleSubmissionView]
+    # Named so the GM knows whether to wait or to close the puzzle.
+    pending: list[str]
+
+
 class StateSync(Payload):
     room: RoomView
     participants: list[ParticipantView]
@@ -318,4 +499,9 @@ class StateSync(Payload):
     round: BuzzRoundView | None
     presses: list[BuzzPressView]
     timer: TimerView
+    # GM only: the authored puzzles, and the results of the one being watched.
+    puzzles: list[PuzzleDraftView]
+    review: PuzzleReviewView | None
+    # Player only: their own dealt board, if a puzzle is live.
+    puzzle: PuzzleBoardView | None
     serverNow: int  # noqa: N815
