@@ -87,8 +87,11 @@ async def test_the_sections_are_links_at_every_width(
 
         await goto_section(gm, "Players")
         assert gm.url.endswith(f"/gm/{code}/players")
-        current = nav.locator('[aria-current="page"]')
-        assert (await current.inner_text()).strip() == "Players"
+        # The URL moves when the link is clicked; the mark moves when React
+        # commits, which on a loaded machine is later. Wait for the mark rather
+        # than sampling it, then check that it is the room's only one.
+        await nav.locator('[aria-current="page"]:text-is("Players")').wait_for(timeout=5000)
+        assert await nav.locator('[aria-current="page"]').count() == 1
 
         # One section's controls at a time.
         await gm.wait_for_selector('button[aria-label="Add 1 point to Robbie"]', timeout=5000)
