@@ -7,7 +7,7 @@
  * on the phones are dealt out of the pairs.
  */
 import { useState } from "react";
-import { Button, Field, Eyebrow, Note, StepButton, TextButton } from "@/components/kit";
+import { Button, ErrorNote, Field, Eyebrow, Note, StepButton, TextButton } from "@/components/kit";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,21 +32,15 @@ import {
   PUZZLE_WORD_MAX,
   type PuzzleDraftView,
 } from "@/lib/protocol";
-import { draftProblem, filledPairs, type PairDraft } from "@/lib/puzzle";
+import { draftProblem, pairsFrom, pairsToText, type DraftProblem } from "@/lib/puzzle";
 import { useSocket } from "@/lib/socket-provider";
 import { t } from "@/i18n";
-
-/** Three rows to start: enough to show what a pair is without a wall of inputs. */
-const BLANK: PairDraft[] = [
-  { first: "", second: "" },
-  { first: "", second: "" },
-  { first: "", second: "" },
-];
 
 interface Draft {
   id: string | null;
   title: string;
-  pairs: PairDraft[];
+  /** The pairs as they are written: one to a line, two words to a comma. */
+  pairs: string;
 }
 
 export function GmPuzzles() {
@@ -69,7 +63,7 @@ export function GmPuzzles() {
 
       <Button
         data-testid="puzzle-new"
-        onClick={() => setDraft({ id: null, title: "", pairs: BLANK })}
+        onClick={() => setDraft({ id: null, title: "", pairs: "" })}
       >
         {strings.create}
       </Button>
@@ -86,7 +80,7 @@ export function GmPuzzles() {
                 setDraft({
                   id: puzzle.id,
                   title: puzzle.title,
-                  pairs: puzzle.pairs.map((pair) => ({ ...pair })),
+                  pairs: pairsToText(puzzle.pairs),
                 })
               }
             />
@@ -187,25 +181,17 @@ function Editor({ draft, onClose }: { draft: Draft; onClose: () => void }) {
   const { emit } = useSocket();
   const strings = t().gm.puzzles;
   const [title, setTitle] = useState(draft.title);
-  const [pairs, setPairs] = useState<PairDraft[]>(draft.pairs);
-  const [problem, setProblem] = useState<string | null>(null);
-
-  function setPair(index: number, half: "first" | "second", value: string) {
-    setPairs((current) =>
-      current.map((pair, at) => (at === index ? { ...pair, [half]: value } : pair)),
-    );
-  }
+  const [pairs, setPairs] = useState(draft.pairs);
+  const [problem, setProblem] = useState<DraftProblem | null>(null);
 
   function save() {
     const trouble = draftProblem(pairs);
     if (trouble) {
-      setProblem(
-        trouble === "needsPairs" ? strings.needsPairs(PUZZLE_MIN_PAIRS) : strings.duplicateWord,
-      );
+      setProblem(trouble);
       return;
     }
 
-    const body = { title: title.trim() || strings.title, pairs: filledPairs(pairs) };
+    const body = { title: title.trim() || strings.title, pairs: pairsFrom(pairs) };
     if (draft.id) emit("puzzle:update", { puzzleId: draft.id, ...body });
     else emit("puzzle:create", body);
     onClose();
@@ -224,59 +210,38 @@ function Editor({ draft, onClose }: { draft: Draft; onClose: () => void }) {
       />
 
       <div className="space-y-2">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] gap-2">
-          <Eyebrow>{strings.leftHeader}</Eyebrow>
-          <Eyebrow>{strings.rightHeader}</Eyebrow>
-          <span />
-        </div>
-
-        {pairs.map((pair, index) => (
-          <div
-            key={index}
-            data-testid="pair-row"
-            className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2rem] items-center gap-2"
-          >
-            <input
-              aria-label={`${strings.leftHeader} ${index + 1}`}
-              placeholder={strings.leftPlaceholder}
-              value={pair.first}
-              onChange={(event) => setPair(index, "first", event.target.value)}
-              maxLength={PUZZLE_WORD_MAX}
-              autoComplete="off"
-              className="min-h-11 w-full rounded-sm border border-input bg-muted px-3
-                text-body text-foreground outline-none focus:border-brand focus:bg-card"
-            />
-            <input
-              aria-label={`${strings.rightHeader} ${index + 1}`}
-              placeholder={strings.rightPlaceholder}
-              value={pair.second}
-              onChange={(event) => setPair(index, "second", event.target.value)}
-              maxLength={PUZZLE_WORD_MAX}
-              autoComplete="off"
-              className="min-h-11 w-full rounded-sm border border-input bg-muted px-3
-                text-body text-foreground outline-none focus:border-brand focus:bg-card"
-            />
-            <button
-              type="button"
-              aria-label={strings.removePair(index + 1)}
-              onClick={() => setPairs((current) => current.filter((_, at) => at !== index))}
-              className="min-h-11 text-faint transition-colors hover:text-danger"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-
-        <TextButton
-          data-testid="pair-add"
-          onClick={() => setPairs((current) => [...current, { first: "", second: "" }])}
-          disabled={pairs.length >= PUZZLE_MAX_PAIRS}
-        >
-          {strings.addPair}
-        </TextButton>
+        <Eyebrow>{strings.pairsField}</Eyebrow>
+        {/* One box rather than two inputs a pair: a list of pairs almost always
+            exists somewhere before it is a puzzle, and this takes the paste. */}
+        <textarea
+          data-testid="puzzle-pairs"
+          aria-label={strings.pairsField}
+          aria-describedby="puzzle-pairs-hint"
+          placeholder={strings.pairsPlaceholder}
+          value={pairs}
+          onChange={(event) => {
+            setPairs(event.target.value);
+            // The complaint belongs to the text that earned it; a fresh look
+            // happens on the next save, not on every keystroke.
+            setProblem(null);
+          }}
+          // Tall enough for an ordinary puzzle whole, and draggable taller for
+          // the long ones rather than sized to the ceiling for everybody.
+          rows={8}
+          spellCheck={false}
+          autoComplete="off"
+          className="w-full resize-y rounded-sm border border-input bg-muted px-3 py-2
+            font-mono text-body leading-relaxed text-foreground outline-none
+            focus:border-brand focus:bg-card"
+        />
+        <Note id="puzzle-pairs-hint">
+          {strings.pairsHint(PUZZLE_MIN_PAIRS, PUZZLE_MAX_PAIRS)}
+        </Note>
       </div>
 
-      {problem ? <Note className="text-danger">{problem}</Note> : null}
+      {problem ? (
+        <ErrorNote data-testid="puzzle-problem">{complaint(problem)}</ErrorNote>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2">
         <Button data-testid="puzzle-save" onClick={save}>
@@ -288,4 +253,21 @@ function Editor({ draft, onClose }: { draft: Draft; onClose: () => void }) {
       </div>
     </div>
   );
+}
+
+/** Every complaint names where to look: which line, or which word came twice. */
+function complaint(problem: DraftProblem): string {
+  const strings = t().gm.puzzles;
+  switch (problem.kind) {
+    case "needsTwoWords":
+      return strings.needsTwoWords(problem.line);
+    case "wordTooLong":
+      return strings.wordTooLong(problem.line, PUZZLE_WORD_MAX);
+    case "needsPairs":
+      return strings.needsPairs(PUZZLE_MIN_PAIRS);
+    case "tooManyPairs":
+      return strings.tooManyPairs(PUZZLE_MAX_PAIRS);
+    case "duplicateWord":
+      return strings.duplicateWord(problem.word);
+  }
 }

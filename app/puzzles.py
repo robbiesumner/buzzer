@@ -7,8 +7,9 @@ The shape of the game: the game master writes a puzzle as pairs of words that
 belong together — the two halves of a duo, a couple, a partnership. Every word
 comes from the same category, so nothing about a word says which side of a pair
 it is on; spotting the association *is* the puzzle. Sending it deals every
-participant the whole pool, shuffled per device, and they drag the words around
-until each row holds two that go together.
+participant the whole pool, shuffled per device, as one list of words, and they
+drag each word into one of the buckets — one per pair — until every bucket holds
+two that go together.
 
 A pairing is unordered: Lennon beside McCartney and McCartney beside Lennon are
 the same answer, and both score.
@@ -298,11 +299,12 @@ def close_puzzle(room_id: str, puzzle_id: str) -> Puzzle | Refusal:
 
 
 def _shuffled_pool(pairs: list[Pair], rng: random.Random) -> list[tuple[str, int]]:
-    """Every word of the puzzle in one shuffled list, never one whose rows are
-    already the answer: a pool handed out solved is a pool nobody plays.
+    """Every word of the puzzle in one shuffled list, never one that already
+    reads as the answer: a pool handed out solved is a pool nobody plays.
 
-    Checked two at a time, because the rows the phone draws are what the player
-    sees — a shuffle is "solved" when every row already holds a real pair.
+    Checked two at a time, because the phone draws the pool as a list in this
+    order — a shuffle gives the game away when every word is sitting next to the
+    one it belongs with.
     """
     pool = [(pair.id, half) for pair in pairs for half in (0, 1)]
     for _ in range(20):

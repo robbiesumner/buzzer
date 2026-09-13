@@ -143,12 +143,10 @@ export const de: Dictionary = {
       editorEdit: "Rätsel bearbeiten",
       titleField: "Titel des Rätsels",
       titlePlaceholder: "Runde 4 — berühmte Duos",
-      leftHeader: "Ein Wort",
-      rightHeader: "Das Wort dazu",
-      leftPlaceholder: "Lennon",
-      rightPlaceholder: "McCartney",
-      addPair: "Paar hinzufügen",
-      removePair: (n: number) => `Paar ${n} entfernen`,
+      pairsField: "Die Paare",
+      pairsPlaceholder: "Lennon, McCartney\nBonnie, Clyde\nJobs, Wozniak",
+      pairsHint: (min: number, max: number) =>
+        `Ein Paar pro Zeile, die beiden Wörter durch ein Komma getrennt. ${min} bis ${max} Paare.`,
       save: "Speichern",
       cancel: "Abbrechen",
       edit: "Bearbeiten",
@@ -167,8 +165,13 @@ export const de: Dictionary = {
       pairCount: (n: number) => (n === 1 ? "1 Paar" : `${n} Paare`),
       liveNote: "Alle haben es. Schließ es, wenn der Raum fertig ist.",
       editLocked: "Ein verschicktes Rätsel lässt sich nicht mehr bearbeiten.",
-      needsPairs: (n: number) => `Füll mindestens ${n} Paare aus.`,
-      duplicateWord: "Jedes Wort im Rätsel muss anders sein — sie landen alle in einem Topf.",
+      needsPairs: (n: number) => `Ein Rätsel braucht mindestens ${n} Paare.`,
+      tooManyPairs: (n: number) => `Ein Rätsel fasst höchstens ${n} Paare.`,
+      needsTwoWords: (line: number) => `Zeile ${line} braucht zwei Wörter, durch ein Komma getrennt.`,
+      wordTooLong: (line: number, max: number) =>
+        `Ein Wort in Zeile ${line} ist länger als ${max} Zeichen.`,
+      duplicateWord: (word: string) =>
+        `„${word}" steht zweimal im Rätsel — alle Wörter landen in einem Topf, also muss jedes anders sein.`,
       noResults: "Noch niemand hat abgegeben.",
       noPuzzle: "Schick ein Rätsel los, um Antworten zu sammeln.",
       submitted: (n: number, total: number) => `${n} von ${total} abgegeben`,
@@ -223,9 +226,19 @@ export const de: Dictionary = {
 
   puzzle: {
     title: "Paare bilden",
-    instructions: "Zieh ein Wort auf ein anderes, um die beiden zu tauschen. Jede Zeile ist ein Paar.",
+    poolTitle: "Die Wörter",
+    poolEmpty: "Jedes Wort steckt in einem Paar.",
+    bucketsTitle: "Die Paare",
+    bucketLabel: (n: number) => `Paar ${n}`,
+    emptyHalf: (n: number) => `Freie Hälfte von Paar ${n}`,
+    cardInPool: (word: string) => `${word}, noch in keinem Paar`,
+    cardInBucket: (word: string, n: number) => `${word}, in Paar ${n}`,
+    instructions:
+      "Zieh jedes Wort in ein Paar. Wer es auf ein schon belegtes Wort zieht, tauscht die beiden.",
     keyboardHint:
-      "Mit Tastatur: mit Tab zu einem Wort, Leertaste zum Aufnehmen, Pfeiltasten zu einem anderen, Leertaste tauscht die beiden.",
+      "Mit Tastatur: mit Tab zu einem Wort, Leertaste zum Aufnehmen, Pfeiltasten zu einem Paar, Leertaste legt es hinein.",
+    stillShort: (n: number) =>
+      n === 1 ? "1 Paar braucht noch zwei Wörter." : `${n} Paare brauchen noch zwei Wörter.`,
     submit: "Abgeben",
     resubmit: "Änderung abgeben",
     submitted: "Abgegeben",
@@ -234,16 +247,14 @@ export const de: Dictionary = {
     closedNote: "Die Spielleitung hat dieses Rätsel geschlossen.",
     result: (correct: number, total: number) => `Du hast ${correct} von ${total} Paaren gefunden`,
     belongsWith: (word: string, partner: string) => `${word} gehört zu ${partner}`,
-    correct: "Richtig",
-    wrong: "Falsch",
-    cardLabel: (word: string, row: number) => `${word}, Paar ${row}`,
     a11y: {
       instructions:
-        "Leertaste nimmt ein Wort auf, die Pfeiltasten führen zu einem anderen, die Leertaste tauscht die beiden, Escape bricht ab.",
+        "Leertaste nimmt ein Wort auf, die Pfeiltasten führen zu einem Paar, die Leertaste legt es hinein, Escape bricht ab.",
       picked: (word: string) => `${word} aufgenommen.`,
-      over: (word: string, other: string) => `${word} über ${other}.`,
-      swapped: (word: string, other: string, row: number) =>
-        `${word} mit ${other} getauscht, in Paar ${row}.`,
+      overBucket: (word: string, n: number) => `${word} über Paar ${n}.`,
+      overList: (word: string) => `${word} über der Wortliste.`,
+      placed: (word: string, n: number) => `${word} in Paar ${n} gelegt.`,
+      returned: (word: string) => `${word} zurück in die Wortliste gelegt.`,
       cancelled: (word: string) => `Das Verschieben von ${word} wurde abgebrochen.`,
     },
   },

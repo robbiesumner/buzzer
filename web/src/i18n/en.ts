@@ -142,12 +142,10 @@ export const en = {
       editorEdit: "Edit the puzzle",
       titleField: "Puzzle title",
       titlePlaceholder: "Round 4 — famous duos",
-      leftHeader: "One word",
-      rightHeader: "The one it goes with",
-      leftPlaceholder: "Lennon",
-      rightPlaceholder: "McCartney",
-      addPair: "Add a pair",
-      removePair: (n: number) => `Remove pair ${n}`,
+      pairsField: "The pairs",
+      pairsPlaceholder: "Lennon, McCartney\nBonnie, Clyde\nJobs, Wozniak",
+      pairsHint: (min: number, max: number) =>
+        `One pair a line, its two words separated by a comma. ${min} to ${max} pairs.`,
       save: "Save",
       cancel: "Cancel",
       edit: "Edit",
@@ -166,8 +164,13 @@ export const en = {
       pairCount: (n: number) => (n === 1 ? "1 pair" : `${n} pairs`),
       liveNote: "Everybody has it. Close it when the room is done.",
       editLocked: "A puzzle that has been sent can no longer be edited.",
-      needsPairs: (n: number) => `Fill in at least ${n} pairs.`,
-      duplicateWord: "Every word in a puzzle has to be different — they all go in one pool.",
+      needsPairs: (n: number) => `A puzzle needs at least ${n} pairs.`,
+      tooManyPairs: (n: number) => `A puzzle holds at most ${n} pairs.`,
+      needsTwoWords: (line: number) => `Line ${line} needs two words, separated by a comma.`,
+      wordTooLong: (line: number, max: number) =>
+        `A word on line ${line} is longer than ${max} characters.`,
+      duplicateWord: (word: string) =>
+        `"${word}" is in the puzzle twice — every word goes in one pool, so each has to be different.`,
       noResults: "Nobody has submitted yet.",
       noPuzzle: "Send a puzzle to collect answers.",
       submitted: (n: number, total: number) => `${n} of ${total} submitted`,
@@ -222,9 +225,19 @@ export const en = {
 
   puzzle: {
     title: "Put them in pairs",
-    instructions: "Drag a word onto another to swap the two. Each row is one pair.",
+    poolTitle: "The words",
+    poolEmpty: "Every word is in a pair.",
+    bucketsTitle: "The pairs",
+    bucketLabel: (n: number) => `Pair ${n}`,
+    emptyHalf: (n: number) => `Empty half of pair ${n}`,
+    cardInPool: (word: string) => `${word}, not in a pair yet`,
+    cardInBucket: (word: string, n: number) => `${word}, in pair ${n}`,
+    instructions:
+      "Drag each word into a pair. Dropping one on a word already there trades the two.",
     keyboardHint:
-      "With a keyboard: tab to a word, space to pick it up, the arrow keys to reach another, space again to swap them.",
+      "With a keyboard: tab to a word, space to pick it up, the arrow keys to reach a pair, space again to drop it in.",
+    stillShort: (n: number) =>
+      n === 1 ? "1 pair still needs two words." : `${n} pairs still need two words.`,
     submit: "Submit",
     resubmit: "Submit the change",
     submitted: "Submitted",
@@ -233,16 +246,14 @@ export const en = {
     closedNote: "The game master has closed this puzzle.",
     result: (correct: number, total: number) => `You found ${correct} of ${total} pairs`,
     belongsWith: (word: string, partner: string) => `${word} goes with ${partner}`,
-    correct: "Right",
-    wrong: "Wrong",
-    cardLabel: (word: string, row: number) => `${word}, pair ${row}`,
     a11y: {
       instructions:
-        "Press space to pick up a word, the arrow keys to reach another, space to swap the two, escape to cancel.",
+        "Press space to pick up a word, the arrow keys to reach a pair, space to drop it in, escape to cancel.",
       picked: (word: string) => `Picked up ${word}.`,
-      over: (word: string, other: string) => `${word} over ${other}.`,
-      swapped: (word: string, other: string, row: number) =>
-        `${word} swapped with ${other}, in pair ${row}.`,
+      overBucket: (word: string, n: number) => `${word} over pair ${n}.`,
+      overList: (word: string) => `${word} over the word list.`,
+      placed: (word: string, n: number) => `${word} put in pair ${n}.`,
+      returned: (word: string) => `${word} put back in the word list.`,
       cancelled: (word: string) => `Moving ${word} was cancelled.`,
     },
   },

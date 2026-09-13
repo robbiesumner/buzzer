@@ -34,10 +34,11 @@ export const TIMER_MAX_MS = 6 * 60 * 60 * 1000;
 export const TIMER_ADD_MS = 30000;
 export const PUZZLE_TITLE_MAX = 60;
 export const PUZZLE_WORD_MAX = 40;
-/** Two pairs is the smallest pool that can be got wrong; eight is twelve rows
- *  short of a scroll hunt on a phone, at sixteen words. */
+/** Two pairs is the smallest pool that can be got wrong. Sixteen is the ceiling
+ *  on a phone: thirty-two words is already a list that has to be scrolled, and
+ *  the pool is capped, not the evening — a long round is several puzzles. */
 export const PUZZLE_MIN_PAIRS = 2;
-export const PUZZLE_MAX_PAIRS = 8;
+export const PUZZLE_MAX_PAIRS = 16;
 export const PUZZLE_MAX_PER_ROOM = 20;
 
 export const TIMER_PRESETS_MS = [15000, 30000, 60000, 120000, 300000] as const;

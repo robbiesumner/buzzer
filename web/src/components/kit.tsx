@@ -1,5 +1,10 @@
 /** The app's own component vocabulary. shadcn's lives in `components/ui/`. See DESIGN.md. */
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+} from "react";
 import { Button as UiButton } from "@/components/ui/button";
 import { Input as UiInput } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -225,15 +230,22 @@ const SCALE: Record<Scale, string> = {
   compact: "text-[clamp(1.75rem,3vw,2.5rem)]",
 };
 
-export function Note({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <p className={`text-small text-faint ${className}`}>{children}</p>;
+type Paragraph = HTMLAttributes<HTMLParagraphElement>;
+
+export function Note({ children, className = "", ...rest }: Paragraph) {
+  return (
+    <p className={`text-small text-faint ${className}`} {...rest}>
+      {children}
+    </p>
+  );
 }
 
-export function ErrorNote({ children }: { children: ReactNode }) {
+export function ErrorNote({ children, ...rest }: Paragraph) {
   return (
     <p
       role="alert"
       className="rounded-sm border-l-2 border-danger bg-danger-tint px-4 py-3 text-small text-danger"
+      {...rest}
     >
       {children}
     </p>

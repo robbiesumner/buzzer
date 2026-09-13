@@ -34,10 +34,11 @@ TIMER_ADD_MS = 30_000
 
 PUZZLE_TITLE_MAX = 60
 PUZZLE_WORD_MAX = 40
-# Two pairs is the smallest pool that can be got wrong; eight is twelve rows
-# short of a scroll hunt on a phone, at sixteen words.
+# Two pairs is the smallest pool that can be got wrong. Sixteen is the ceiling
+# on a phone: thirty-two words is already a list that has to be scrolled, and
+# the pool is capped, not the evening — a long round is several puzzles.
 PUZZLE_MIN_PAIRS = 2
-PUZZLE_MAX_PAIRS = 8
+PUZZLE_MAX_PAIRS = 16
 PUZZLE_MAX_PER_ROOM = 20
 
 Role = Literal["gm", "player"]
