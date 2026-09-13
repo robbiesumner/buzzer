@@ -5,7 +5,7 @@ import { TimerHeader } from "@/components/countdown";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PuzzleBoard } from "@/components/puzzle-board";
 import { Standings } from "@/components/standings";
-import { Button, Card, Heading, Eyebrow, RoomCode, Screen, SectionHeader } from "@/components/kit";
+import { Button, Card, Heading, Eyebrow, Screen, SectionHeader } from "@/components/kit";
 import { SocketProvider, useSocket } from "@/lib/socket-provider";
 import { useStoredSession } from "@/lib/use-session";
 import type { StoredSession } from "@/lib/session";
@@ -26,7 +26,7 @@ export function PlayRoute() {
 
 function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => void }) {
   const navigate = useNavigate();
-  const { room, participants, round, puzzle } = useSocket();
+  const { participants, round, puzzle } = useSocket();
   const strings = t().lobby;
   const scoreboard = t().scoreboard;
 
@@ -70,24 +70,18 @@ function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => vo
 
         <div className="flex flex-col gap-8">
           <Card className="text-center">
-            <Eyebrow>{t().gm.codeLabel}</Eyebrow>
-            <div className="mt-2">
-              <RoomCode code={room?.code ?? session.code} size="display" />
-            </div>
-            <div className="mt-4 border-t border-border pt-4">
-              <p className="text-body text-muted-foreground">{session.name}</p>
-              {typeof myScore === "number" ? (
-                <div className="mt-3 space-y-1">
-                  <Eyebrow>{scoreboard.yourScore}</Eyebrow>
-                  <p
-                    data-testid="my-score"
-                    className="numeric text-display leading-none font-semibold text-foreground tabular-nums"
-                  >
-                    {myScore}
-                  </p>
-                </div>
-              ) : null}
-            </div>
+            <p className="text-body text-muted-foreground">{session.name}</p>
+            {typeof myScore === "number" ? (
+              <div className="mt-3 space-y-1">
+                <Eyebrow>{scoreboard.yourScore}</Eyebrow>
+                <p
+                  data-testid="my-score"
+                  className="numeric text-display leading-none font-semibold text-foreground tabular-nums"
+                >
+                  {myScore}
+                </p>
+              </div>
+            ) : null}
           </Card>
 
           <Card>
