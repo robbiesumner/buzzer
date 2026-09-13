@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRemaining } from "@/components/countdown";
-import { Countdown, Field, Label, Note, StepButton, TextButton } from "@/components/ui";
+import { Countdown, Field, Eyebrow, Note, StepButton, TextButton } from "@/components/kit";
 import { TIMER_ADD_MS, TIMER_PRESETS_MS } from "@/lib/protocol";
 import { useSocket } from "@/lib/socket-provider";
 import { formatDuration, formatPreset, parseSeconds, timerTone } from "@/lib/timer";
@@ -34,13 +34,13 @@ export function GmTimerBar() {
 
   return (
     <section
-      className="rounded-md border border-rule bg-surface p-6
+      className="rounded-md border border-border bg-card p-6
         lg:flex lg:items-center lg:gap-8"
     >
       <div className="space-y-1 text-center lg:w-56 lg:shrink-0">
-        <Label>{heading}</Label>
+        <Eyebrow>{heading}</Eyebrow>
         <Countdown value={formatDuration(remaining)} tone={timerTone(timer, remaining)} />
-        {timer?.label ? <p className="text-small text-ink-muted">{timer.label}</p> : null}
+        {timer?.label ? <p className="text-small text-muted-foreground">{timer.label}</p> : null}
       </div>
 
       <div className="mt-4 min-w-0 space-y-4 lg:mt-0 lg:flex-1">
@@ -70,7 +70,7 @@ export function GmTimerBar() {
         {!startable ? <Note>{strings.noDuration}</Note> : null}
 
         {open ? (
-          <div className="space-y-3 border-t border-rule pt-4">
+          <div className="space-y-3 border-t border-border pt-4">
             <div className="grid grid-cols-5 gap-2">
               {TIMER_PRESETS_MS.map((preset) => (
                 <StepButton key={preset} onClick={() => setDuration(preset)}>

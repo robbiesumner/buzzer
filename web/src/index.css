@@ -1,29 +1,78 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /* The source of truth for every value: components use tokens, never raw hex.
- * Rationale in DESIGN.md. */
+ * Rationale in DESIGN.md.
+ *
+ * Two vocabularies sit over one set of raw values. shadcn's components read
+ * `--background`, `--primary`, `--border`, `--radius` and friends directly, so
+ * those names are the real ones; the app's own names (`--brand`, `--buzz`, the
+ * wall scale, the QR pair) cover what shadcn has no word for. Nothing is
+ * defined twice. */
+
+/* shadcn's files use the `dark:` variant, which by default means a `.dark`
+ * ancestor. This app has never had one: it follows the OS, with `[data-theme]`
+ * as the override. Re-point the variant rather than the app. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme="dark"], :root[data-theme="dark"] *) {
+    @slot;
+  }
+}
 
 @theme inline {
-  /* Semantic names only: what a thing is, not what colour it is. */
-  --color-paper: var(--paper);
-  --color-surface: var(--surface);
-  --color-sunken: var(--sunken);
-  --color-ink: var(--ink);
-  --color-ink-muted: var(--ink-muted);
-  --color-ink-faint: var(--ink-faint);
-  --color-rule: var(--rule);
-  --color-rule-strong: var(--rule-strong);
-
+  /* --- colour --------------------------------------------------------
+     Two vocabularies over one set of raws. shadcn's names are the real ones —
+     its files read `--background`, `--primary`, `--popover` directly — and the
+     rest is what shadcn has no word for: the per-feature hues, the third text
+     tier, the QR pair. */
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-foreground: var(--foreground);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-accent-tint: var(--accent-tint);
-  --color-on-accent: var(--on-accent);
-
+  --color-accent-foreground: var(--accent-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-tint: var(--brand-tint);
+  --color-on-brand: var(--on-brand);
+  --color-buzz: var(--buzz);
+  --color-buzz-fg: var(--buzz-fg);
+  --color-buzz-strong: var(--buzz-strong);
+  --color-buzz-tint: var(--buzz-tint);
+  --color-timer: var(--timer);
+  --color-timer-fg: var(--timer-fg);
+  --color-timer-strong: var(--timer-strong);
+  --color-timer-tint: var(--timer-tint);
+  --color-puzzle: var(--puzzle);
+  --color-puzzle-fg: var(--puzzle-fg);
+  --color-puzzle-strong: var(--puzzle-strong);
+  --color-puzzle-tint: var(--puzzle-tint);
   --color-success: var(--success);
+  --color-success-fg: var(--success-fg);
+  --color-success-strong: var(--success-strong);
   --color-success-tint: var(--success-tint);
-  --color-warn: var(--warn);
-  --color-warn-tint: var(--warn-tint);
   --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-strong: var(--danger-strong);
   --color-danger-tint: var(--danger-tint);
 
   /* The QR plate. The only pair that does NOT flip with the theme: a camera
@@ -32,112 +81,266 @@
   --color-qr-paper: #ffffff;
   --color-qr-ink: #16150f;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Aliases kept because the app says what it means: `warn` is the timer's hue
+     as text, `danger` the danger hue as text, `success` likewise. */
+  --color-warn: var(--timer-strong);
+  --color-warn-tint: var(--timer-tint);
+  --color-success-fill: var(--success);
+  --color-danger-fill: var(--danger);
+
+  /* --- type ----------------------------------------------------------- */
+  --font-sans: "Outfit Variable", Outfit, ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
   --text-label: 0.6875rem;   /* 11px — uppercase section labels */
-  --text-small: 0.8125rem;   /* 13px — captions, hints */
-  --text-body: 1rem;         /* 16px — the floor for anything on a phone */
-  --text-lead: 1.125rem;     /* 18px */
-  --text-title: 1.75rem;     /* 28px — page titles */
-  --text-display: 2.75rem;   /* 44px — scores */
-  --text-hero: 4rem;         /* 64px — room code, countdown */
-  --text-wall: 9rem;         /* 144px — the shared screen, read from six metres */
+  --text-small: 0.875rem;    /* 14px — captions and hints, in a dim room */
+  --text-body: 1.0625rem;    /* 17px — the floor for anything on a phone */
+  --text-lead: 1.25rem;      /* 20px */
+  --text-title: 2rem;        /* 32px — page titles */
+  --text-display: 3.25rem;   /* 52px — scores */
+  --text-hero: 4.75rem;      /* 76px — room code, countdown */
+  --text-wall: 9.5rem;       /* 152px — the shared screen, read from six metres */
 
-  --tracking-label: 0.14em;
+  --tracking-label: 0.16em;
   --tracking-code: 0.22em;
 
-  --radius-sm: 3px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  /* --- shape ----------------------------------------------------------- */
+  /* Chunky on purpose: this is a party game, not a console. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 8px);
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-pop: pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-expire: expire 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes expire {
+    0% { background-color: var(--danger-tint); }
+    100% { background-color: transparent; }
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.92); }
+    55% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
 }
 
+/* The raw values. Each colour is written once, as an `--l-*` / `--d-*` pair;
+ * the blocks below only choose between them. That is what keeps the dark
+ * palette from drifting out of step with the light one.
+ *
+ * Deliberately NOT `light-dark()`: it needs Safari 17.5+, and the phones that
+ * walk into a pub are not a browser matrix anyone controls. */
 :root {
-  --paper: #faf9f6;
-  --surface: #ffffff;
-  --sunken: #f2f0ea;
-  --ink: #16150f;
-  --ink-muted: #6b6862;
-  --ink-faint: #767169;
-  --rule: #e3e0d8;
-  --rule-strong: #cdc8bc;
+  --radius: 1rem;
 
-  --accent: #2f5fe0;
-  --accent-hover: #1e48bc;
-  --accent-tint: #e8eeff;
-  --on-accent: #ffffff;
+  /* ground and text */
+  --l-background: #fffde9;  --d-background: #1a1024;
+  --l-card: #f9fef7;        --d-card: #251733;
+  --l-secondary: #e9f4e5;   --d-secondary: #150c1d;
+  --l-foreground: #391e0f;  --d-foreground: #fbf3ff;
+  --l-muted-fg: #6b5344;    --d-muted-fg: #b9a7c6;
+  --l-faint: #80695a;       --d-faint: #948699;
+  --l-border: #dcd9ef;      --d-border: #3a2a4c;
+  --l-input: #8f8ab8;       --d-input: #7d6c8b;
 
-  --success: #1d6b4f;
-  --success-tint: #e3f3ec;
-  --warn: #b45309;
-  --warn-tint: #fbf0dd;
-  --danger: #b42318;
-  --danger-tint: #fce9e7;
+  /* brand: the general primary — join, submit, the room code, the focus ring */
+  --l-brand: #1155ff;       --d-brand: #a987ff;
+  --l-brand-hover: #103ab0; --d-brand-hover: #c0a6ff;
+  --l-brand-tint: #dee8ff;  --d-brand-tint: #2a1d45;
+  --l-on-brand: #ffffff;    --d-on-brand: #17102b;
+
+  /* One hue per feature, in three parts: the vivid FILL, the `-fg` that is
+     legible on that fill, and `-strong`, the same hue dark enough to be text on
+     a light ground. Which way `-fg` goes is not a constant — the danger red
+     sits in the middle and takes white where the others take ink. */
+  --l-buzz: #ec4e41;        --d-buzz: #ff6b86;
+  --l-buzz-fg: #32160a;     --d-buzz-fg: #241b2f;
+  --l-buzz-strong: #b83a2c; --d-buzz-strong: #ff6b86;
+  --l-buzz-tint: #ffe4ea;   --d-buzz-tint: #3d1220;
+
+  --l-timer: #ff9f0a;       --d-timer: #ffbe4d;
+  --l-timer-fg: #241b2f;    --d-timer-fg: #241b2f;
+  --l-timer-strong: #8a5200; --d-timer-strong: #ffbe4d;
+  --l-timer-tint: #ffefd4;  --d-timer-tint: #382409;
+
+  --l-puzzle: #00a6d6;      --d-puzzle: #4fd3f5;
+  --l-puzzle-fg: #241b2f;   --d-puzzle-fg: #241b2f;
+  --l-puzzle-strong: #0a6e8c; --d-puzzle-strong: #4fd3f5;
+  --l-puzzle-tint: #def2fa; --d-puzzle-tint: #0a2c3a;
+
+  --l-success: #1f9d5b;     --d-success: #5be0a0;
+  --l-success-fg: #241b2f;  --d-success-fg: #241b2f;
+  --l-success-strong: #157a45; --d-success-strong: #5be0a0;
+  --l-success-tint: #dcf3e6; --d-success-tint: #0d2c1e;
+
+  --l-danger: #bb1a2e;      --d-danger: #ff7a70;
+  --l-danger-fg: #ffffff;   --d-danger-fg: #241b2f;
+  --l-danger-strong: #9e1226; --d-danger-strong: #ff7a70;
+  --l-danger-tint: #fde7ea; --d-danger-tint: #3a1512;
+
+  /* the light theme is the default */
+  --background: var(--l-background);
+  --card: var(--l-card);
+  --card-foreground: var(--l-foreground);
+  --popover: var(--l-card);
+  --popover-foreground: var(--l-foreground);
+  --secondary: var(--l-secondary);
+  --secondary-foreground: var(--l-foreground);
+  --muted: var(--l-secondary);
+  --muted-foreground: var(--l-muted-fg);
+  --foreground: var(--l-foreground);
+  --faint: var(--l-faint);
+  --border: var(--l-border);
+  --input: var(--l-input);
+  --ring: var(--l-brand);
+  --accent: var(--l-brand-tint);
+  --accent-foreground: var(--l-foreground);
+  --primary: var(--l-brand);
+  --primary-foreground: var(--l-on-brand);
+  --destructive: var(--l-danger);
+  --destructive-foreground: var(--l-danger-fg);
+  --brand: var(--l-brand);
+  --brand-hover: var(--l-brand-hover);
+  --brand-tint: var(--l-brand-tint);
+  --on-brand: var(--l-on-brand);
+  --buzz: var(--l-buzz);
+  --buzz-fg: var(--l-buzz-fg);
+  --buzz-strong: var(--l-buzz-strong);
+  --buzz-tint: var(--l-buzz-tint);
+  --timer: var(--l-timer);
+  --timer-fg: var(--l-timer-fg);
+  --timer-strong: var(--l-timer-strong);
+  --timer-tint: var(--l-timer-tint);
+  --puzzle: var(--l-puzzle);
+  --puzzle-fg: var(--l-puzzle-fg);
+  --puzzle-strong: var(--l-puzzle-strong);
+  --puzzle-tint: var(--l-puzzle-tint);
+  --success: var(--l-success);
+  --success-fg: var(--l-success-fg);
+  --success-strong: var(--l-success-strong);
+  --success-tint: var(--l-success-tint);
+  --danger: var(--l-danger);
+  --danger-fg: var(--l-danger-fg);
+  --danger-strong: var(--l-danger-strong);
+  --danger-tint: var(--l-danger-tint);
 
   color-scheme: light;
 }
 
-/* Not an inversion: a dimmed room needs a warm near-black ground and a lighter
- * accent, or the blue vibrates against the dark. */
+/* Not an inversion: a dimmed room wants a deep plum ground and lighter hues,
+ * or the saturated fills vibrate against the dark. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #121210;
-    --surface: #1a1a17;
-    --sunken: #0e0e0c;
-    --ink: #f2f0ea;
-    --ink-muted: #a5a198;
-    --ink-faint: #8a867f;
-    --rule: #2c2c27;
-    --rule-strong: #3e3e37;
-
-    --accent: #8aa6ff;
-    --accent-hover: #a8bcff;
-    --accent-tint: #1b2440;
-    --on-accent: #0b1020;
-
-    --success: #5cc59a;
-    --success-tint: #10261d;
-    --warn: #e8a838;
-    --warn-tint: #2a1f08;
-    --danger: #f08a80;
-    --danger-tint: #2c1414;
+    --background: var(--d-background);
+    --card: var(--d-card);
+    --card-foreground: var(--d-foreground);
+    --popover: var(--d-card);
+    --popover-foreground: var(--d-foreground);
+    --secondary: var(--d-secondary);
+    --secondary-foreground: var(--d-foreground);
+    --muted: var(--d-secondary);
+    --muted-foreground: var(--d-muted-fg);
+    --foreground: var(--d-foreground);
+    --faint: var(--d-faint);
+    --border: var(--d-border);
+    --input: var(--d-input);
+    --ring: var(--d-brand);
+    --accent: var(--d-brand-tint);
+    --accent-foreground: var(--d-foreground);
+    --primary: var(--d-brand);
+    --primary-foreground: var(--d-on-brand);
+    --destructive: var(--d-danger);
+    --destructive-foreground: var(--d-danger-fg);
+    --brand: var(--d-brand);
+    --brand-hover: var(--d-brand-hover);
+    --brand-tint: var(--d-brand-tint);
+    --on-brand: var(--d-on-brand);
+    --buzz: var(--d-buzz);
+    --buzz-fg: var(--d-buzz-fg);
+    --buzz-strong: var(--d-buzz-strong);
+    --buzz-tint: var(--d-buzz-tint);
+    --timer: var(--d-timer);
+    --timer-fg: var(--d-timer-fg);
+    --timer-strong: var(--d-timer-strong);
+    --timer-tint: var(--d-timer-tint);
+    --puzzle: var(--d-puzzle);
+    --puzzle-fg: var(--d-puzzle-fg);
+    --puzzle-strong: var(--d-puzzle-strong);
+    --puzzle-tint: var(--d-puzzle-tint);
+    --success: var(--d-success);
+    --success-fg: var(--d-success-fg);
+    --success-strong: var(--d-success-strong);
+    --success-tint: var(--d-success-tint);
+    --danger: var(--d-danger);
+    --danger-fg: var(--d-danger-fg);
+    --danger-strong: var(--d-danger-strong);
+    --danger-tint: var(--d-danger-tint);
 
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --paper: #121210;
-  --surface: #1a1a17;
-  --sunken: #0e0e0c;
-  --ink: #f2f0ea;
-  --ink-muted: #a5a198;
-  --ink-faint: #8a867f;
-  --rule: #2c2c27;
-  --rule-strong: #3e3e37;
-  --accent: #8aa6ff;
-  --accent-hover: #a8bcff;
-  --accent-tint: #1b2440;
-  --on-accent: #0b1020;
-  --success: #5cc59a;
-  --success-tint: #10261d;
-  --warn: #e8a838;
-  --warn-tint: #2a1f08;
-  --danger: #f08a80;
-  --danger-tint: #2c1414;
+  --background: var(--d-background);
+  --card: var(--d-card);
+  --card-foreground: var(--d-foreground);
+  --popover: var(--d-card);
+  --popover-foreground: var(--d-foreground);
+  --secondary: var(--d-secondary);
+  --secondary-foreground: var(--d-foreground);
+  --muted: var(--d-secondary);
+  --muted-foreground: var(--d-muted-fg);
+  --foreground: var(--d-foreground);
+  --faint: var(--d-faint);
+  --border: var(--d-border);
+  --input: var(--d-input);
+  --ring: var(--d-brand);
+  --accent: var(--d-brand-tint);
+  --accent-foreground: var(--d-foreground);
+  --primary: var(--d-brand);
+  --primary-foreground: var(--d-on-brand);
+  --destructive: var(--d-danger);
+  --destructive-foreground: var(--d-danger-fg);
+  --brand: var(--d-brand);
+  --brand-hover: var(--d-brand-hover);
+  --brand-tint: var(--d-brand-tint);
+  --on-brand: var(--d-on-brand);
+  --buzz: var(--d-buzz);
+  --buzz-fg: var(--d-buzz-fg);
+  --buzz-strong: var(--d-buzz-strong);
+  --buzz-tint: var(--d-buzz-tint);
+  --timer: var(--d-timer);
+  --timer-fg: var(--d-timer-fg);
+  --timer-strong: var(--d-timer-strong);
+  --timer-tint: var(--d-timer-tint);
+  --puzzle: var(--d-puzzle);
+  --puzzle-fg: var(--d-puzzle-fg);
+  --puzzle-strong: var(--d-puzzle-strong);
+  --puzzle-tint: var(--d-puzzle-tint);
+  --success: var(--d-success);
+  --success-fg: var(--d-success-fg);
+  --success-strong: var(--d-success-strong);
+  --success-tint: var(--d-success-tint);
+  --danger: var(--d-danger);
+  --danger-fg: var(--d-danger-fg);
+  --danger-strong: var(--d-danger-strong);
+  --danger-tint: var(--d-danger-tint);
+
   color-scheme: dark;
 }
 
 @layer base {
   html {
-    background: var(--color-paper);
+    background: var(--color-background);
   }
 
   body {
-    background: var(--color-paper);
-    color: var(--color-ink);
+    background: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     font-size: var(--text-body);
     line-height: 1.5;
@@ -146,21 +349,23 @@
       env(safe-area-inset-left);
   }
 
-  /* Must not reflow as digits change width. */
+  /* Must not reflow as digits change width. Outfit's default figures are
+   * proportional — a `1` is half the width of a `0` — so this is doing real
+   * work, not restating a default. */
   .numeric {
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums lining-nums;
     font-feature-settings: "tnum" 1;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-ring);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 
   ::selection {
-    background: var(--color-accent-tint);
-    color: var(--color-ink);
+    background: var(--color-brand-tint);
+    color: var(--color-foreground);
   }
 
   @media (prefers-reduced-motion: reduce) {

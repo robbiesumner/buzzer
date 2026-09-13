@@ -5,7 +5,7 @@
 import { useMemo } from "react";
 import { encode } from "uqr";
 import { t } from "@/i18n";
-import { Note } from "@/components/ui";
+import { Note } from "@/components/kit";
 
 /** Level M survives a thumb over a corner and a beamer out of focus. */
 const ECC = "M" as const;

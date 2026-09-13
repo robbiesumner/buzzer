@@ -17,6 +17,7 @@ from tests.e2e import (  # noqa: F401 - `site` is a fixture
     PHONE,
     add_socket_latency,
     chromium,
+    goto_section,
     join,
     open_room,
     site,
@@ -139,6 +140,9 @@ async def test_a_slow_link_does_not_lose_a_round_it_won(site: str) -> None:  # n
         await fast.wait_for_timeout(150)
         await fast.click('[data-testid="buzz-button"]')
 
+        # The full ranked order, with the per-press stats, is the Buzzer
+        # section; the overview only shows the top of it.
+        await goto_section(gm, "Buzzer")
         rows = gm.locator('[data-testid="press-row"]')
         await rows.nth(1).wait_for(timeout=10000)
         assert "Robbie" in await rows.nth(0).inner_text()

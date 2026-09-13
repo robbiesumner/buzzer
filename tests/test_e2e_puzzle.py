@@ -15,7 +15,14 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from tests.e2e import chromium, join, open_room, site  # noqa: F401 - `site` is a fixture
+from tests.e2e import (  # noqa: F401 - `site` is a fixture
+    chromium,
+    goto_results,
+    goto_section,
+    join,
+    open_room,
+    site,
+)
 
 playwright_api = pytest.importorskip("playwright.async_api")
 
@@ -31,6 +38,7 @@ SOLVED = [word for pair in KEY.items() for word in pair]
 
 
 async def author_puzzle(gm: Page, title: str = "Famous duos") -> None:
+    await goto_section(gm, "Puzzles")
     await gm.click('[data-testid="puzzle-new"]')
     await gm.fill('[data-testid="puzzle-title"]', title)
     for index, (first, second) in enumerate(KEY.items(), start=1):
@@ -41,6 +49,7 @@ async def author_puzzle(gm: Page, title: str = "Famous duos") -> None:
 
 
 async def send_puzzle(gm: Page) -> None:
+    await goto_section(gm, "Puzzles")
     await gm.click('[data-testid="puzzle-send"]')
 
 
@@ -189,10 +198,12 @@ async def test_a_shuffled_pool_is_dragged_into_pairs_and_scored(site: str) -> No
         await player.click('[data-testid="puzzle-submit"]')
 
         # The game master sees the result without touching anything either.
+        await goto_results(gm)
         await gm.wait_for_selector('[data-testid="submission-row"]', timeout=5000)
         assert (await gm.inner_text('[data-testid="submission-score"]')).strip() == "3 of 3"
 
         # Closing is the reveal, and it reaches the phone.
+        await goto_section(gm, "Puzzles")
         await gm.click('[data-testid="puzzle-close"]')
         await player.wait_for_selector('[data-testid="puzzle-result"]', timeout=5000)
         assert "3 of 3" in await player.inner_text('[data-testid="puzzle-result"]')
@@ -217,6 +228,8 @@ async def test_a_pair_counts_whichever_way_round_it_is_put(site: str) -> None:  
         await swap_by_mouse(player, 2, 3)
         await player.click('[data-testid="puzzle-submit"]')
 
+        await goto_results(gm)
+
         await gm.wait_for_selector('[data-testid="submission-row"]', timeout=5000)
         assert (await gm.inner_text('[data-testid="submission-score"]')).strip() == "3 of 3"
 
@@ -238,6 +251,8 @@ async def test_a_wrong_pairing_is_marked_pair_by_pair(site: str) -> None:  # noq
         await swap_by_mouse(player, 1, 2)
         await player.click('[data-testid="puzzle-submit"]')
 
+        await goto_results(gm)
+
         await gm.wait_for_selector('[data-testid="submission-row"]', timeout=5000)
         assert (await gm.inner_text('[data-testid="submission-score"]')).strip() == "1 of 3"
         # The game master sees which pairs, not only how many.
@@ -246,6 +261,8 @@ async def test_a_wrong_pairing_is_marked_pair_by_pair(site: str) -> None:  # noq
             "nodes => nodes.map(node => node.textContent)",
         )
         assert sorted(marks) == ["✓", "✗", "✗"]
+
+        await goto_section(gm, "Puzzles")
 
         await gm.click('[data-testid="puzzle-close"]')
         await player.wait_for_selector('[data-testid="puzzle-result"]', timeout=5000)
@@ -300,6 +317,7 @@ async def test_a_pairing_survives_a_reload(site: str) -> None:  # noqa: F811
         await solve(player)
         submitted = await cards(player)
         await player.click('[data-testid="puzzle-submit"]')
+        await goto_results(gm)
         await gm.wait_for_selector('[data-testid="submission-row"]', timeout=5000)
 
         await player.reload()
@@ -328,6 +346,8 @@ async def test_a_second_player_gets_a_different_shuffle(site: str) -> None:  # n
 
         await solve(first)
         await first.click('[data-testid="puzzle-submit"]')
+
+        await goto_results(gm)
 
         await gm.wait_for_selector('[data-testid="submission-row"]', timeout=5000)
         assert (await gm.inner_text('[data-testid="submission-score"]')).strip() == "3 of 3"

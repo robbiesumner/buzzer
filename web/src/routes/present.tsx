@@ -9,16 +9,16 @@ import { TimerHeader } from "@/components/countdown";
 import { LanguageSwitch } from "@/components/language-switch";
 import { QrCode } from "@/components/qr-code";
 import { Standings } from "@/components/standings";
-import { Button, Card, Label, Note, RoomCode, Screen, SectionHeader } from "@/components/ui";
+import { Button, Card, Eyebrow, Note, RoomCode, Screen, SectionHeader } from "@/components/kit";
 import { useJoinLink } from "@/lib/join-url";
-import { loadSession } from "@/lib/session";
+import { useStoredSession } from "@/lib/use-session";
 import { SocketProvider, useSocket } from "@/lib/socket-provider";
 import { t } from "@/i18n";
 
 export function PresentRoute() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
-  const session = loadSession("gm", code);
+  const { session } = useStoredSession("gm", code);
 
   if (!session) return <NeedsGameMaster />;
 
@@ -34,7 +34,7 @@ function NeedsGameMaster() {
   return (
     <Screen centred>
       <Card className="text-center">
-        <p className="text-lead text-ink-muted">{strings.needsGm}</p>
+        <p className="text-lead text-muted-foreground">{strings.needsGm}</p>
         <Link to="/gm" className="mt-6 block">
           <Button>{strings.signIn}</Button>
         </Link>
@@ -60,18 +60,18 @@ function PresentScreen({ code }: { code: string }) {
 
       <div className="grid gap-8 sm:grid-cols-[1fr_auto] sm:items-center">
         <div className="space-y-4 text-center sm:text-left">
-          <Label>{gm.codeLabel}</Label>
+          <Eyebrow>{gm.codeLabel}</Eyebrow>
           <RoomCode code={shown} size="wall" />
           <div className="space-y-1">
-            <Label>{gm.joinAt}</Label>
-            <p className="text-lead break-all text-ink-muted">{origin}</p>
+            <Eyebrow>{gm.joinAt}</Eyebrow>
+            <p className="text-lead break-all text-muted-foreground">{origin}</p>
           </div>
         </div>
 
         {/* The wall-sized version of "type this in": a camera does it faster. */}
         <div className="mx-auto w-44 space-y-2 sm:w-56 lg:w-64">
           <QrCode value={link} className="p-3" />
-          <p className="text-center text-small text-ink-faint">{qr.scan}</p>
+          <p className="text-center text-small text-faint">{qr.scan}</p>
         </div>
       </div>
 

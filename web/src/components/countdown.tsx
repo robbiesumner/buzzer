@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Countdown, Label, type Scale } from "@/components/ui";
+import { Countdown, Eyebrow, type Scale } from "@/components/kit";
 import { useSocket } from "@/lib/socket-provider";
 import { formatDuration, remainingMs, timerTone } from "@/lib/timer";
 import { t } from "@/i18n";
@@ -53,11 +53,14 @@ export function TimerHeader({ size = "hero" }: { size?: Scale }) {
   return (
     <section
       data-testid="timer-header"
-      className="space-y-1 rounded-md border border-rule bg-surface px-6 py-4 text-center"
+      // Colour only, never size: `/present` is read at six metres and the
+      // digits must not reflow (DESIGN.md section 6).
+      className={`space-y-1 rounded-md border border-border bg-card px-6 py-4 text-center
+        ${expired ? "animate-expire" : ""}`}
     >
-      <Label>{heading}</Label>
+      <Eyebrow>{heading}</Eyebrow>
       <Countdown value={formatDuration(remaining)} tone={tone} size={size} />
-      {timer.label ? <p className="text-small text-ink-muted">{timer.label}</p> : null}
+      {timer.label ? <p className="text-small text-muted-foreground">{timer.label}</p> : null}
     </section>
   );
 }

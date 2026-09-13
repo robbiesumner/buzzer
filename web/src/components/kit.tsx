@@ -1,9 +1,8 @@
-/** The component vocabulary: the design system is enforced by reuse. See DESIGN.md. */
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-} from "react";
+/** The app's own component vocabulary. shadcn's lives in `components/ui/`. See DESIGN.md. */
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+import { Button as UiButton } from "@/components/ui/button";
+import { Input as UiInput } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 /**
  * `column` the phone column and every form, `panel` two of those, `wide` the
@@ -38,15 +37,15 @@ export function Screen({
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-md border border-rule bg-surface p-6 ${className}`}>
+    <section className={`rounded-md border border-border bg-card p-6 ${className}`}>
       {children}
     </section>
   );
 }
 
-export function Label({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function Eyebrow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <span className={`text-label font-medium tracking-label text-ink-faint uppercase ${className}`}>
+    <span className={`text-label font-medium tracking-label text-faint uppercase ${className}`}>
       {children}
     </span>
   );
@@ -55,17 +54,17 @@ export function Label({ children, className = "" }: { children: ReactNode; class
 export function Heading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <header className="space-y-2">
-      <h1 className="text-title leading-tight font-semibold tracking-tight text-ink">{title}</h1>
-      {subtitle ? <p className="text-small text-ink-muted">{subtitle}</p> : null}
+      <h1 className="text-title leading-tight font-semibold tracking-tight text-foreground">{title}</h1>
+      {subtitle ? <p className="text-small text-muted-foreground">{subtitle}</p> : null}
     </header>
   );
 }
 
 export function SectionHeader({ label, aside }: { label: string; aside?: ReactNode }) {
   return (
-    <div className="mb-1 flex items-baseline justify-between border-b border-rule pb-2">
-      <Label>{label}</Label>
-      {aside ? <span className="text-small numeric text-ink-muted">{aside}</span> : null}
+    <div className="mb-1 flex items-baseline justify-between border-b border-border pb-2">
+      <Eyebrow>{label}</Eyebrow>
+      {aside ? <span className="text-small numeric text-muted-foreground">{aside}</span> : null}
     </div>
   );
 }
@@ -108,14 +107,12 @@ export function Field({
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
   return (
     <label className="block space-y-2">
-      <Label>{label}</Label>
-      <input
+      <Eyebrow>{label}</Eyebrow>
+      <UiInput
         {...props}
-        className={`w-full rounded-sm border border-rule-strong bg-sunken px-4 py-3
-          text-body text-ink transition-colors duration-150 outline-none
-          placeholder:text-ink-faint focus:border-accent focus:bg-surface ${className}`}
+        className={cn("h-auto bg-muted px-4 py-3 text-body shadow-none", className)}
       />
-      {hint ? <span className="text-small text-ink-muted">{hint}</span> : null}
+      {hint ? <span className="text-small text-muted-foreground">{hint}</span> : null}
     </label>
   );
 }
@@ -126,21 +123,28 @@ export function Button({
   className = "",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "ghost";
+  /** `buzz` is the one big control on a player's phone. */
+  variant?: "primary" | "ghost" | "buzz";
 }) {
   const styles =
     variant === "primary"
-      ? `bg-accent text-on-accent hover:bg-accent-hover
-         disabled:border disabled:border-rule disabled:bg-sunken disabled:text-ink-faint`
-      : "border border-rule-strong text-ink-muted hover:border-ink-muted hover:text-ink";
+      ? `bg-brand text-on-brand hover:bg-brand-hover
+         disabled:border disabled:border-border disabled:bg-muted disabled:text-faint`
+      : variant === "buzz"
+        ? "bg-buzz text-buzz-fg hover:brightness-105 active:scale-[0.985]"
+        : "border border-input bg-transparent text-muted-foreground hover:border-muted-foreground hover:text-foreground";
   return (
-    <button
+    <UiButton
       {...props}
-      className={`w-full rounded-sm px-4 py-3 text-body font-medium
-        transition-colors duration-150 disabled:cursor-not-allowed ${styles} ${className}`}
+      className={cn(
+        "h-auto w-full rounded-sm px-4 py-3 text-body font-medium shadow-none",
+        "disabled:cursor-not-allowed disabled:opacity-100",
+        styles,
+        className,
+      )}
     >
       {children}
-    </button>
+    </UiButton>
   );
 }
 
@@ -151,15 +155,19 @@ export function StepButton({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
+    <UiButton
       {...props}
-      className={`numeric min-h-11 w-full rounded-sm border border-rule-strong px-2
-        text-body font-medium text-ink transition-colors duration-150
-        hover:border-accent hover:text-accent
-        disabled:cursor-not-allowed disabled:border-rule disabled:text-ink-faint ${className}`}
+      className={cn(
+        `numeric h-auto min-h-11 w-full rounded-sm border border-input bg-transparent
+         px-2 text-body font-medium text-foreground shadow-none
+         hover:border-brand hover:bg-transparent hover:text-brand
+         disabled:cursor-not-allowed disabled:opacity-100
+         disabled:border-border disabled:text-faint`,
+        className,
+      )}
     >
       {children}
-    </button>
+    </UiButton>
   );
 }
 
@@ -169,47 +177,17 @@ export function TextButton({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
+    <UiButton
       {...props}
-      className={`text-small text-ink-muted underline decoration-rule-strong
-        underline-offset-4 transition-colors hover:text-ink hover:decoration-ink ${className}`}
+      className={cn(
+        `h-auto rounded-none bg-transparent px-0 py-0 text-small font-normal
+         text-muted-foreground underline decoration-input underline-offset-4
+         shadow-none hover:bg-transparent hover:text-foreground hover:decoration-foreground`,
+        className,
+      )}
     >
       {children}
-    </button>
-  );
-}
-
-export function Tabs<T extends string>({
-  tabs,
-  active,
-  onSelect,
-}: {
-  tabs: readonly { id: T; label: string }[];
-  active: T;
-  onSelect: (id: T) => void;
-}) {
-  return (
-    <div role="tablist" className="flex gap-1 border-b border-rule">
-      {tabs.map((tab) => {
-        const selected = tab.id === active;
-        return (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onSelect(tab.id)}
-            className={`-mb-px min-h-11 border-b-2 px-4 text-small font-medium
-              transition-colors duration-150 ${
-                selected
-                  ? "border-accent text-ink"
-                  : "border-transparent text-ink-muted hover:text-ink"
-              }`}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
+    </UiButton>
   );
 }
 
@@ -223,7 +201,7 @@ export function Countdown({
   tone?: "neutral" | "warn" | "danger";
   size?: Scale;
 }) {
-  const colour = tone === "danger" ? "text-danger" : tone === "warn" ? "text-warn" : "text-ink";
+  const colour = tone === "danger" ? "text-danger" : tone === "warn" ? "text-warn" : "text-foreground";
   return (
     <p
       data-testid="countdown"
@@ -236,16 +214,19 @@ export function Countdown({
 }
 
 /** `wall` is for `/present`: a projector six metres away is not a phone in your hand. */
-export type Scale = "wall" | "hero" | "display";
+export type Scale = "wall" | "hero" | "display" | "compact";
 
 const SCALE: Record<Scale, string> = {
-  wall: "text-[clamp(3.5rem,11vw,var(--text-wall))]",
-  hero: "text-[clamp(2.5rem,13vw,var(--text-hero))]",
-  display: "text-[clamp(1.75rem,9vw,var(--text-display))]",
+  wall: "text-[clamp(4rem,12vw,var(--text-wall))]",
+  hero: "text-[clamp(2.75rem,14vw,var(--text-hero))]",
+  display: "text-[clamp(2rem,9.5vw,var(--text-display))]",
+  // For a code sharing its row with the QR: the clamps above are sized by the
+  // viewport, which knows nothing about the width of a 24rem column.
+  compact: "text-[clamp(1.75rem,3vw,2.5rem)]",
 };
 
 export function Note({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <p className={`text-small text-ink-faint ${className}`}>{children}</p>;
+  return <p className={`text-small text-faint ${className}`}>{children}</p>;
 }
 
 export function ErrorNote({ children }: { children: ReactNode }) {
@@ -264,7 +245,7 @@ export function RoomCode({ code, size = "hero" }: { code: string; size?: Scale }
     <p
       data-testid="room-code"
       // Letter-spacing leaves a trailing gap; pad the left to match.
-      className={`numeric font-semibold tracking-code text-accent ${SCALE[size]} pl-[0.22em]`}
+      className={`numeric font-semibold tracking-code text-brand ${SCALE[size]} pl-[0.22em]`}
     >
       {code}
     </p>

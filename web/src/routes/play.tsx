@@ -1,31 +1,25 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import { Buzzer } from "@/components/buzzer";
 import { ConnectionBadge } from "@/components/connection-badge";
 import { TimerHeader } from "@/components/countdown";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PuzzleBoard } from "@/components/puzzle-board";
 import { Standings } from "@/components/standings";
-import { Button, Card, Heading, Label, RoomCode, Screen, SectionHeader } from "@/components/ui";
+import { Button, Card, Heading, Eyebrow, RoomCode, Screen, SectionHeader } from "@/components/kit";
 import { SocketProvider, useSocket } from "@/lib/socket-provider";
-import { clearSession, loadSession, type StoredSession } from "@/lib/session";
+import { useStoredSession } from "@/lib/use-session";
+import type { StoredSession } from "@/lib/session";
 import { t } from "@/i18n";
 
 export function PlayRoute() {
-  const navigate = useNavigate();
-  const [session, setSession] = useState<StoredSession | null | undefined>(undefined);
+  const { session, forget } = useStoredSession("player");
 
-  useEffect(() => {
-    const stored = loadSession("player");
-    if (!stored) navigate("/", { replace: true });
-    setSession(stored);
-  }, [navigate]);
-
-  if (!session) return null;
+  // A render-time redirect: the session is a synchronous localStorage read.
+  if (!session) return <Navigate to="/" replace />;
 
   return (
     <SocketProvider token={session.token}>
-      <Lobby session={session} onLeave={() => setSession(null)} />
+      <Lobby session={session} onLeave={forget} />
     </SocketProvider>
   );
 }
@@ -41,7 +35,6 @@ function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => vo
   )?.score;
 
   function leave() {
-    clearSession("player", session.code);
     onLeave();
     navigate("/", { replace: true });
   }
@@ -77,18 +70,18 @@ function Lobby({ session, onLeave }: { session: StoredSession; onLeave: () => vo
 
         <div className="flex flex-col gap-8">
           <Card className="text-center">
-            <Label>{t().gm.codeLabel}</Label>
+            <Eyebrow>{t().gm.codeLabel}</Eyebrow>
             <div className="mt-2">
               <RoomCode code={room?.code ?? session.code} size="display" />
             </div>
-            <div className="mt-4 border-t border-rule pt-4">
-              <p className="text-body text-ink-muted">{session.name}</p>
+            <div className="mt-4 border-t border-border pt-4">
+              <p className="text-body text-muted-foreground">{session.name}</p>
               {typeof myScore === "number" ? (
                 <div className="mt-3 space-y-1">
-                  <Label>{scoreboard.yourScore}</Label>
+                  <Eyebrow>{scoreboard.yourScore}</Eyebrow>
                   <p
                     data-testid="my-score"
-                    className="numeric text-display leading-none font-semibold text-ink tabular-nums"
+                    className="numeric text-display leading-none font-semibold text-foreground tabular-nums"
                   >
                     {myScore}
                   </p>

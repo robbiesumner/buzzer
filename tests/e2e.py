@@ -81,6 +81,24 @@ async def join(
     return player
 
 
+#: The game master's panel is one shell over five screens. The links live in a
+#: landmark of their own so the sub-nav inside Puzzles cannot be confused for it.
+SECTIONS = "Room sections"
+
+
+async def goto_section(gm: Page, name: str) -> None:
+    """Move the game master to one of the panel's sections."""
+    nav = gm.get_by_role("navigation", name=SECTIONS)
+    await nav.get_by_role("link", name=name, exact=True).click()
+
+
+async def goto_results(gm: Page) -> None:
+    """Puzzle results sit under Puzzles, which is where their sub-nav is."""
+    await goto_section(gm, "Puzzles")
+    sub = gm.get_by_role("navigation", name="Puzzles")
+    await sub.get_by_role("link", name="Results", exact=True).click()
+
+
 async def add_socket_latency(context: BrowserContext, one_way_ms: int) -> None:
     await context.add_init_script(f"""
       (() => {{

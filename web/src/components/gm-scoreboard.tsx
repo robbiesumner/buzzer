@@ -2,7 +2,8 @@ import { useState } from "react";
 import { SCORE_DELTA_MAX, SCORE_QUICK_DELTAS, SCORE_REASON_MAX } from "@/lib/protocol";
 import type { ParticipantView } from "@/lib/protocol";
 import { type Emit, useSocket } from "@/lib/socket-provider";
-import { Field, StepButton, TextButton } from "@/components/ui";
+import { Field, StepButton, TextButton } from "@/components/kit";
+import { Switch } from "@/components/ui/switch";
 import { t } from "@/i18n";
 
 /** A real minus sign (U+2212), not a hyphen. */
@@ -44,11 +45,11 @@ export function GmScoreboard() {
   const lobby = t().lobby;
 
   if (participants.length === 0) {
-    return <p className="py-8 text-center text-small text-ink-faint">{lobby.empty}</p>;
+    return <p className="py-8 text-center text-small text-faint">{lobby.empty}</p>;
   }
 
   return (
-    <ul className="divide-y divide-rule">
+    <ul className="divide-y divide-border">
       {participants.map((participant) => (
         <ScoreRow key={participant.id} participant={participant} />
       ))}
@@ -69,11 +70,11 @@ function ScoreRow({ participant }: { participant: ParticipantView }) {
           aria-label={participant.connected ? lobby.connected : lobby.disconnected}
           title={participant.connected ? lobby.connected : lobby.disconnected}
           className={`size-1.5 shrink-0 rounded-full ${
-            participant.connected ? "bg-success" : "bg-rule-strong"
+            participant.connected ? "bg-success" : "bg-input"
           }`}
         />
-        <span className="min-w-0 flex-1 truncate text-ink">{participant.name}</span>
-        <span className="numeric text-lead font-semibold text-ink tabular-nums">
+        <span className="min-w-0 flex-1 truncate text-foreground">{participant.name}</span>
+        <span className="numeric text-lead font-semibold text-foreground tabular-nums">
           {participant.score ?? 0}
         </span>
       </div>
@@ -135,7 +136,7 @@ function CustomAdjustment({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 border-l border-rule-strong pt-1 pl-3">
+    <form onSubmit={submit} className="space-y-3 border-l border-input pt-1 pl-3">
       <Field
         label={strings.customAmount}
         placeholder={strings.customAmountPlaceholder}
@@ -166,14 +167,18 @@ export function ScoreVisibilityToggle() {
   const strings = t().gm;
   const hidden = room?.scoresVisible === false;
 
+  // One control that shows the state, rather than a button whose label
+  // describes the action while a sentence beside it describes the state.
   return (
-    <div className="mt-4 flex items-center justify-between gap-3 border-t border-rule pt-4">
-      <span className={`text-small ${hidden ? "text-warn" : "text-ink-faint"}`}>
+    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+      <span className={`text-small ${hidden ? "text-warn" : "text-faint"}`}>
         {hidden ? strings.scoresHiddenNote : strings.scoresVisibleNote}
       </span>
-      <TextButton onClick={() => emit("room:setScoresVisible", { visible: hidden })}>
-        {hidden ? strings.showScores : strings.hideScores}
-      </TextButton>
+      <Switch
+        checked={!hidden}
+        aria-label={hidden ? strings.showScores : strings.hideScores}
+        onCheckedChange={(visible) => emit("room:setScoresVisible", { visible })}
+      />
     </div>
   );
 }

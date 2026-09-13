@@ -4,14 +4,19 @@
  */
 import { useState } from "react";
 import { ScoreSteppers } from "@/components/gm-scoreboard";
-import { Button, Field, Label, Note, SectionHeader, TextButton } from "@/components/ui";
+import { Button, Field, Eyebrow, Note, SectionHeader, TextButton } from "@/components/kit";
 import { LABEL_MAX, type BuzzPressView, type ParticipantView } from "@/lib/protocol";
 import { useSocket } from "@/lib/socket-provider";
 import { formatGap } from "@/lib/timer";
 import { t } from "@/i18n";
 
-export function GmBuzzer() {
-  const { round, presses, emit } = useSocket();
+/**
+ * Arming, the lock mode, and clearing — the controls, without the press detail
+ * that only the buzzer section has room for. `compact` drops the round label
+ * field, which is what the overview wants: one decision, not a form.
+ */
+export function GmBuzzerControls({ compact = false }: { compact?: boolean }) {
+  const { round, emit } = useSocket();
   const strings = t().gm.buzz;
   const [label, setLabel] = useState("");
   const [locked, setLocked] = useState(true);
@@ -25,8 +30,8 @@ export function GmBuzzer() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-3">
+    <div className="space-y-3">
+      {compact ? null : (
         <Field
           label={strings.labelField}
           placeholder={strings.labelPlaceholder}
@@ -35,30 +40,41 @@ export function GmBuzzer() {
           maxLength={LABEL_MAX}
           autoComplete="off"
         />
+      )}
 
-        {/* One lock control, in one place. Before a round it chooses what Arm
-            will do; during one it flips the live round, which is how "first
-            buzz wins" becomes "first three count" without losing the presses
-            already in (SPEC.md section 7.2). */}
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-small text-ink-faint">
-            {isLocked ? strings.lockedOnNote : strings.lockedOffNote}
-          </span>
-          {/* The button says what pressing it does, not what is already true. */}
-          <TextButton onClick={toggleLock} className="shrink-0 whitespace-nowrap">
-            {isLocked ? strings.lockedOff : strings.lockedOn}
-          </TextButton>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={() => emit("buzz:arm", { label: label.trim() || null, locked })}>
-            {round ? strings.rearm : strings.arm}
-          </Button>
-          <Button variant="ghost" disabled={!round} onClick={() => emit("buzz:reset")}>
-            {strings.clear}
-          </Button>
-        </div>
+      {/* One lock control, in one place. Before a round it chooses what Arm
+          will do; during one it flips the live round, which is how "first
+          buzz wins" becomes "first three count" without losing the presses
+          already in (SPEC.md section 7.2). */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-small text-faint">
+          {isLocked ? strings.lockedOnNote : strings.lockedOffNote}
+        </span>
+        {/* The button says what pressing it does, not what is already true. */}
+        <TextButton onClick={toggleLock} className="shrink-0 whitespace-nowrap">
+          {isLocked ? strings.lockedOff : strings.lockedOn}
+        </TextButton>
       </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Button onClick={() => emit("buzz:arm", { label: label.trim() || null, locked })}>
+          {round ? strings.rearm : strings.arm}
+        </Button>
+        <Button variant="ghost" disabled={!round} onClick={() => emit("buzz:reset")}>
+          {strings.clear}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function GmBuzzer() {
+  const { round, presses } = useSocket();
+  const strings = t().gm.buzz;
+
+  return (
+    <div className="space-y-5">
+      <GmBuzzerControls />
 
       <div>
         <SectionHeader
@@ -67,13 +83,13 @@ export function GmBuzzer() {
         />
 
         {round && presses.length > 0 ? (
-          <ol className="divide-y divide-rule">
+          <ol className="divide-y divide-border">
             {presses.map((press) => (
               <PressRow key={press.participantId} press={press} />
             ))}
           </ol>
         ) : (
-          <p className="py-8 text-center text-small text-ink-faint">
+          <p className="py-8 text-center text-small text-faint">
             {round ? strings.noPresses : strings.idle}
           </p>
         )}
@@ -92,12 +108,12 @@ function PressRow({ press }: { press: BuzzPressView }) {
   return (
     <li data-testid="press-row" className="space-y-2 py-4">
       <div className="flex items-baseline gap-3">
-        <span className="numeric w-5 shrink-0 text-right text-small text-ink-faint">
+        <span className="numeric w-5 shrink-0 text-right text-small text-faint">
           {press.rank}
         </span>
-        <span className="min-w-0 flex-1 truncate text-ink">{participant?.name ?? "—"}</span>
+        <span className="min-w-0 flex-1 truncate text-foreground">{participant?.name ?? "—"}</span>
         {/* The number that decided the round, given the weight to match. */}
-        <span className="numeric text-lead font-semibold text-ink tabular-nums">
+        <span className="numeric text-lead font-semibold text-foreground tabular-nums">
           {press.rank === 1 ? "—" : formatGap(press.deltaMs)}
         </span>
       </div>
@@ -136,9 +152,9 @@ function Stat({ label, value, testId }: { label: string; value: string; testId?:
   return (
     <div>
       <dt>
-        <Label>{label}</Label>
+        <Eyebrow>{label}</Eyebrow>
       </dt>
-      <dd data-testid={testId} className="numeric text-small text-ink-muted tabular-nums">
+      <dd data-testid={testId} className="numeric text-small text-muted-foreground tabular-nums">
         {value}
       </dd>
     </div>

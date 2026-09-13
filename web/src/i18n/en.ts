@@ -57,6 +57,11 @@ export const en = {
     unlocked: "Everyone can still buzz",
   },
 
+  /** The strings shadcn's own components ship hard-coded. */
+  ui: {
+    close: "Close",
+  },
+
   gm: {
     loginTitle: "Game master",
     loginSubtitle: "Enter the game master password.",
@@ -99,10 +104,33 @@ export const en = {
     undoLabel: (name: string) => `Undo the last score change for ${name}`,
     customLabel: (name: string) => `Custom score change for ${name}`,
 
-    tabs: {
-      participants: "Players",
+    nav: {
+      label: "Room sections",
+      overview: "Overview",
+      players: "Players",
       buzzer: "Buzzer",
       puzzles: "Puzzles",
+      review: "Results",
+    },
+
+    header: {
+      showCode: "Show the code to scan",
+      hideCode: "Hide the code",
+    },
+
+    overview: {
+      title: "Overview",
+      nothingLive: "Nothing is running.",
+      nothingLiveNote: "Nothing has been sent to the room yet.",
+      liveRound: "Live round",
+      livePuzzle: "Live puzzle",
+      openSection: (section: string) => `Open ${section}`,
+      connectedCount: (connected: number, total: number) =>
+        `${connected} of ${total} connected`,
+      buzzedCount: (n: number) => (n === 1 ? "1 buzz" : `${n} buzzes`),
+      draftCount: (n: number) => (n === 1 ? "1 draft" : `${n} drafts`),
+      noPuzzles: "No puzzles yet.",
+      fullOrder: "See the full order",
     },
 
     puzzles: {
@@ -110,6 +138,8 @@ export const en = {
       results: "Results",
       empty: "No puzzles yet.",
       create: "New puzzle",
+      editorNew: "New puzzle",
+      editorEdit: "Edit the puzzle",
       titleField: "Puzzle title",
       titlePlaceholder: "Round 4 — famous duos",
       leftHeader: "One word",
@@ -122,7 +152,11 @@ export const en = {
       cancel: "Cancel",
       edit: "Edit",
       delete: "Delete",
-      confirmDelete: "Delete it?",
+      deleteTitle: "Delete this puzzle?",
+      deleteBody: (title: string) =>
+        `"${title}" and any answers already collected for it go with it. This cannot be undone.`,
+      deleteConfirm: "Delete it",
+      deleteCancel: "Keep it",
       send: "Send to the room",
       resend: "Send again",
       close: "Close it",

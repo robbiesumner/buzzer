@@ -23,7 +23,7 @@ export function LanguageSwitch({ className = "" }: { className?: string }) {
             aria-label={strings.select(name)}
             onClick={() => setLanguage(id)}
             className={`min-h-11 rounded-sm px-3 text-small transition-colors duration-150 ${
-              selected ? "font-medium text-ink" : "text-ink-faint hover:text-ink-muted"
+              selected ? "font-medium text-foreground" : "text-faint hover:text-muted-foreground"
             }`}
           >
             {name}

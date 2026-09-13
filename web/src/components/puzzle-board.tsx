@@ -31,7 +31,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Button, Label, Note, SectionHeader } from "@/components/ui";
+import { Button, Eyebrow, Note, SectionHeader } from "@/components/kit";
 import type { PuzzleBoardView } from "@/lib/protocol";
 import {
   reveal,
@@ -117,7 +117,10 @@ function Board({ board }: { board: PuzzleBoardView }) {
                 data-testid="puzzle-row"
                 // The row is the claim being made — these two go together — so
                 // it is drawn as one object, and marked as one after the reveal.
-                className={`space-y-1 rounded-md border p-1.5 ${rowTone(revealed?.[index])}`}
+                className={`space-y-1 rounded-md border p-1.5 transition-colors
+                  duration-300 ${rowTone(revealed?.[index])}`}
+                // A ripple down the pairs rather than every row at once.
+                style={revealed ? { transitionDelay: `${index * 60}ms` } : undefined}
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
                   {[first, second].map((id) => (
@@ -160,7 +163,7 @@ function Board({ board }: { board: PuzzleBoardView }) {
           </Button>
           {board.submitted ? (
             <div className="space-y-1">
-              <Label>{strings.submitted}</Label>
+              <Eyebrow>{strings.submitted}</Eyebrow>
               <Note>{strings.submittedNote}</Note>
             </div>
           ) : null}
@@ -172,7 +175,7 @@ function Board({ board }: { board: PuzzleBoardView }) {
 
 /** Nothing until the reveal: an unmarked row must not look like a wrong one. */
 function rowTone(verdict: RevealedRow | undefined): string {
-  if (!verdict) return "border-rule";
+  if (!verdict) return "border-border";
   return verdict.correct ? "border-success" : "border-danger";
 }
 
@@ -181,11 +184,11 @@ function Closed({ board, revealed }: { board: PuzzleBoardView; revealed: Reveale
   const right = revealed?.filter((entry) => entry.correct).length ?? board.correct ?? 0;
 
   return (
-    <div className="space-y-1 border-t border-rule pt-4">
-      <Label>{strings.resultLabel}</Label>
+    <div className="space-y-1 border-t border-border pt-4">
+      <Eyebrow>{strings.resultLabel}</Eyebrow>
       <p
         data-testid="puzzle-result"
-        className="numeric text-lead font-semibold text-ink tabular-nums"
+        className="numeric text-lead font-semibold text-foreground tabular-nums"
       >
         {strings.result(right, board.total)}
       </p>
@@ -227,9 +230,9 @@ function Card({
       {...listeners}
       disabled={disabled}
       className={`flex min-h-11 w-full touch-none flex-col justify-center rounded-sm border
-        border-rule-strong bg-surface px-3 py-2 text-left text-body text-ink
+        border-input bg-card px-3 py-2 text-left text-body text-foreground
         transition-colors duration-150 disabled:cursor-default
-        ${disabled ? "" : "hover:border-accent"} ${isDragging ? "z-10 border-accent" : ""}`}
+        ${disabled ? "" : "hover:border-brand"} ${isDragging ? "z-10 border-brand" : ""}`}
     >
       <span className="truncate">{word}</span>
     </button>

@@ -4,7 +4,7 @@
  * that 20ms can decide.
  */
 import { useEffect, useState } from "react";
-import { Label, Note } from "@/components/ui";
+import { Eyebrow, Note } from "@/components/kit";
 import { useSocket } from "@/lib/socket-provider";
 import { t } from "@/i18n";
 
@@ -38,7 +38,7 @@ export function Buzzer({ participantId }: { participantId?: string }) {
   if (round === null) {
     return (
       <div className="space-y-1 py-6 text-center">
-        <Label>{strings.waiting}</Label>
+        <Eyebrow>{strings.waiting}</Eyebrow>
         <Note>{strings.waitingNote}</Note>
       </div>
     );
@@ -65,7 +65,7 @@ export function Buzzer({ participantId }: { participantId?: string }) {
   return (
     <div className="space-y-4">
       {round.label ? (
-        <p className="text-center text-small text-ink-muted">{round.label}</p>
+        <p className="text-center text-small text-muted-foreground">{round.label}</p>
       ) : null}
 
       <button
@@ -74,7 +74,8 @@ export function Buzzer({ participantId }: { participantId?: string }) {
         aria-label={strings.pressLabel}
         data-testid="buzz-button"
         className={`numeric flex min-h-[9rem] w-full items-center justify-center
-          rounded-md font-semibold transition-colors duration-150 select-none
+          rounded-xl font-semibold transition-[color,background-color,transform,filter]
+          duration-150 select-none
           disabled:cursor-not-allowed
           ${
             lockedOut
@@ -96,11 +97,16 @@ export function Buzzer({ participantId }: { participantId?: string }) {
   );
 }
 
+/**
+ * The fill carries its own label colour. Never `text-foreground`: that is
+ * near-white in the dark theme, which on the light buzz fill is 2.5:1 — on the
+ * largest control in the app.
+ */
 function buttonTone(pressed: boolean, lockedOut: boolean, pending: boolean): string {
-  if (lockedOut) return "border border-rule-strong bg-sunken text-ink-faint";
-  if (pressed) return "border border-success bg-success-tint text-success";
-  if (pending) return "bg-accent-hover text-on-accent";
-  return "bg-accent text-on-accent hover:bg-accent-hover active:bg-accent-hover";
+  if (lockedOut) return "border border-input bg-muted text-faint";
+  if (pressed) return "border-2 border-success bg-success-tint text-success";
+  if (pending) return "bg-buzz text-buzz-fg opacity-90";
+  return "bg-buzz text-buzz-fg hover:brightness-105 active:scale-[0.97]";
 }
 
 function buttonText(
@@ -131,7 +137,11 @@ function BuzzStatus({
   if (mine) {
     return (
       <div className="space-y-1 text-center">
-        <p className="text-lead font-medium text-ink">
+        <p
+          className={`text-lead font-medium text-foreground ${
+            mine.rank === 1 ? "animate-pop" : ""
+          }`}
+        >
           {mine.rank === 1 ? strings.youWon : strings.youPlaced(mine.rank)}
         </p>
         {/* The gap that decided it — the number worth arguing about. */}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { LanguageSwitch } from "@/components/language-switch";
-import { Button, Card, ErrorNote, Field, Heading, Screen } from "@/components/ui";
+import { Button, Card, ErrorNote, Field, Heading, Screen } from "@/components/kit";
 import { CODE_PARAM } from "@/lib/join-url";
 import { PARTICIPANT_NAME_MAX, ROOM_CODE_LENGTH } from "@/lib/protocol";
 import { loadSession, saveSession } from "@/lib/session";
@@ -104,8 +104,8 @@ export function JoinRoute() {
       <div className="mt-auto space-y-3 lg:mt-4">
         <Link
           to="/gm"
-          className="block text-center text-small text-ink-muted underline
-            decoration-rule-strong underline-offset-4 hover:text-ink"
+          className="block text-center text-small text-muted-foreground underline
+            decoration-input underline-offset-4 hover:text-foreground"
         >
           {strings.gmLink}
         </Link>

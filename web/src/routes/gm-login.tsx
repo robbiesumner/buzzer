@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { LanguageSwitch } from "@/components/language-switch";
-import { Button, Card, ErrorNote, Field, Heading, Screen } from "@/components/ui";
+import { Button, Card, ErrorNote, Field, Heading, Screen } from "@/components/kit";
 import { ROOM_CODE_LENGTH } from "@/lib/protocol";
 import { saveSession } from "@/lib/session";
 import { t } from "@/i18n";

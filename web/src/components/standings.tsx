@@ -1,6 +1,6 @@
 import { useSocket } from "@/lib/socket-provider";
 import { rankStandings, scoresHidden } from "@/lib/standings";
-import { Label } from "@/components/ui";
+import { Eyebrow } from "@/components/kit";
 import { t } from "@/i18n";
 
 /**
@@ -20,7 +20,7 @@ export function Standings({
 
   if (participants.length === 0) {
     return (
-      <p data-testid="standings" className="py-8 text-center text-small text-ink-faint">
+      <p data-testid="standings" className="py-8 text-center text-small text-faint">
         {lobby.empty}
       </p>
     );
@@ -29,38 +29,38 @@ export function Standings({
   if (withheld || scoresHidden(participants)) {
     return (
       <div data-testid="standings" className="space-y-1 py-8 text-center">
-        <Label>{strings.hidden}</Label>
-        <p className="text-small text-ink-faint">{strings.hiddenNote}</p>
+        <Eyebrow>{strings.hidden}</Eyebrow>
+        <p className="text-small text-faint">{strings.hiddenNote}</p>
       </div>
     );
   }
 
   return (
-    <ol data-testid="standings" className="divide-y divide-rule">
+    <ol data-testid="standings" className="divide-y divide-border">
       {rankStandings(participants).map(({ participant, rank }) => {
         const isSelf = participant.id === highlightId;
         return (
           <li
             key={participant.id}
-            className={`flex items-center gap-3 py-3 ${isSelf ? "bg-accent-tint" : ""}`}
+            className={`flex items-center gap-3 py-3 ${isSelf ? "bg-brand-tint" : ""}`}
           >
-            <span className="numeric w-5 shrink-0 text-right text-small text-ink-faint">
+            <span className="numeric w-5 shrink-0 text-right text-small text-faint">
               {rank}
             </span>
             <span
               aria-label={participant.connected ? lobby.connected : lobby.disconnected}
               title={participant.connected ? lobby.connected : lobby.disconnected}
               className={`size-1.5 shrink-0 rounded-full ${
-                participant.connected ? "bg-success" : "bg-rule-strong"
+                participant.connected ? "bg-success" : "bg-input"
               }`}
             />
-            <span className={`min-w-0 flex-1 truncate ${isSelf ? "font-medium" : ""} text-ink`}>
+            <span className={`min-w-0 flex-1 truncate ${isSelf ? "font-medium" : ""} text-foreground`}>
               {participant.name}
               {isSelf ? (
-                <span className="ml-2 text-small text-ink-faint">({lobby.you})</span>
+                <span className="ml-2 text-small text-faint">({lobby.you})</span>
               ) : null}
             </span>
-            <span className="numeric text-lead font-semibold text-ink tabular-nums">
+            <span className="numeric text-lead font-semibold text-foreground tabular-nums">
               {participant.score}
             </span>
           </li>

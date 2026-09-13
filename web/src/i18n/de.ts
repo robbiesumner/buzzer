@@ -60,6 +60,10 @@ export const de: Dictionary = {
     unlocked: "Alle können noch buzzern",
   },
 
+  ui: {
+    close: "Schließen",
+  },
+
   gm: {
     loginTitle: "Spielleitung",
     loginSubtitle: "Gib das Passwort der Spielleitung ein.",
@@ -101,10 +105,33 @@ export const de: Dictionary = {
     undoLabel: (name: string) => `Letzte Punkteänderung für ${name} rückgängig machen`,
     customLabel: (name: string) => `Eigene Punkteänderung für ${name}`,
 
-    tabs: {
-      participants: "Mitspielende",
+    nav: {
+      label: "Bereiche",
+      overview: "Überblick",
+      players: "Mitspielende",
       buzzer: "Buzzer",
       puzzles: "Rätsel",
+      review: "Ergebnisse",
+    },
+
+    header: {
+      showCode: "Code zum Scannen zeigen",
+      hideCode: "Code ausblenden",
+    },
+
+    overview: {
+      title: "Überblick",
+      nothingLive: "Gerade läuft nichts.",
+      nothingLiveNote: "Der Raum hat noch nichts bekommen.",
+      liveRound: "Laufende Runde",
+      livePuzzle: "Laufendes Rätsel",
+      openSection: (section: string) => `${section} öffnen`,
+      connectedCount: (connected: number, total: number) =>
+        `${connected} von ${total} verbunden`,
+      buzzedCount: (n: number) => (n === 1 ? "1 Buzz" : `${n} Buzzes`),
+      draftCount: (n: number) => (n === 1 ? "1 Entwurf" : `${n} Entwürfe`),
+      noPuzzles: "Noch keine Rätsel.",
+      fullOrder: "Ganze Reihenfolge ansehen",
     },
 
     puzzles: {
@@ -112,6 +139,8 @@ export const de: Dictionary = {
       results: "Ergebnisse",
       empty: "Noch keine Rätsel.",
       create: "Neues Rätsel",
+      editorNew: "Neues Rätsel",
+      editorEdit: "Rätsel bearbeiten",
       titleField: "Titel des Rätsels",
       titlePlaceholder: "Runde 4 — berühmte Duos",
       leftHeader: "Ein Wort",
@@ -124,7 +153,11 @@ export const de: Dictionary = {
       cancel: "Abbrechen",
       edit: "Bearbeiten",
       delete: "Löschen",
-      confirmDelete: "Wirklich löschen?",
+      deleteTitle: "Dieses Rätsel löschen?",
+      deleteBody: (title: string) =>
+        `„${title}" und alle schon eingegangenen Antworten verschwinden mit. Das lässt sich nicht rückgängig machen.`,
+      deleteConfirm: "Löschen",
+      deleteCancel: "Behalten",
       send: "An den Raum schicken",
       resend: "Noch einmal schicken",
       close: "Schließen",

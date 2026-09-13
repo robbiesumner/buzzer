@@ -13,7 +13,13 @@ from __future__ import annotations
 
 import pytest
 
-from tests.e2e import chromium, join, open_room, site  # noqa: F401 - `site` is a fixture
+from tests.e2e import (  # noqa: F401 - `site` is a fixture
+    chromium,
+    goto_section,
+    join,
+    open_room,
+    site,
+)
 
 playwright_api = pytest.importorskip("playwright.async_api")
 
@@ -63,15 +69,18 @@ async def test_the_shared_screen_shows_the_room_and_keeps_a_secret(site: str) ->
         await beamer.wait_for_selector(f'[data-testid="room-code"]:text-is("{code}")', timeout=5000)
         await beamer.wait_for_selector('[data-testid="join-qr"]', timeout=5000)
 
+        await goto_section(gm, "Players")
         await gm.click('button[aria-label="Add 5 points to Robbie"]')
         await beamer.wait_for_selector("text=Robbie", timeout=5000)
         await player.wait_for_selector('[data-testid="my-score"]:text-is("5")', timeout=5000)
 
-        await gm.click("text=Hide the scores")
+        # Hide/show sits with the standings it hides, on the overview.
+        await goto_section(gm, "Overview")
+        await gm.get_by_role("switch", name="Hide the scores").click()
         await beamer.wait_for_selector("text=Scores hidden", timeout=5000)
         assert "5" not in await beamer.inner_text('[data-testid="standings"]')
 
-        await gm.click("text=Show the scores")
+        await gm.get_by_role("switch", name="Show the scores").click()
         await beamer.wait_for_selector("text=Robbie", timeout=5000)
 
         await browser.close()

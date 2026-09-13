@@ -8,7 +8,7 @@
  * else: the puzzle says who was right, the game master says what that is worth.
  */
 import { ScoreSteppers } from "@/components/gm-scoreboard";
-import { Label, Note, SectionHeader } from "@/components/ui";
+import { Eyebrow, Note, SectionHeader } from "@/components/kit";
 import type { PuzzleSubmissionView } from "@/lib/protocol";
 import { useSocket } from "@/lib/socket-provider";
 import { t } from "@/i18n";
@@ -19,7 +19,7 @@ export function GmPuzzleReview() {
 
   if (!review) {
     return (
-      <p data-testid="puzzle-review" className="py-8 text-center text-small text-ink-faint">
+      <p data-testid="puzzle-review" className="py-8 text-center text-small text-faint">
         {strings.noPuzzle}
       </p>
     );
@@ -33,9 +33,9 @@ export function GmPuzzleReview() {
       />
 
       {review.submissions.length === 0 ? (
-        <p className="py-8 text-center text-small text-ink-faint">{strings.noResults}</p>
+        <p className="py-8 text-center text-small text-faint">{strings.noResults}</p>
       ) : (
-        <ol className="divide-y divide-rule">
+        <ol className="divide-y divide-border">
           {review.submissions.map((submission) => (
             <SubmissionRow key={submission.participantId} submission={submission} />
           ))}
@@ -57,17 +57,17 @@ function SubmissionRow({ submission }: { submission: PuzzleSubmissionView }) {
   return (
     <li data-testid="submission-row" className="space-y-3 py-4">
       <div className="flex items-baseline gap-3">
-        <span className="min-w-0 flex-1 truncate text-ink">{submission.name}</span>
+        <span className="min-w-0 flex-1 truncate text-foreground">{submission.name}</span>
         <span
           data-testid="submission-score"
-          className="numeric text-lead font-semibold text-ink tabular-nums"
+          className="numeric text-lead font-semibold text-foreground tabular-nums"
         >
           {strings.score(submission.correct, submission.total)}
         </span>
       </div>
 
       <div>
-        <Label>{strings.answers}</Label>
+        <Eyebrow>{strings.answers}</Eyebrow>
         <ul className="mt-1 space-y-1">
           {submission.answers.map((answer) => (
             <li key={answer.first} className="flex items-baseline gap-2 text-small">
@@ -77,12 +77,12 @@ function SubmissionRow({ submission }: { submission: PuzzleSubmissionView }) {
               >
                 {answer.correct ? "✓" : "✗"}
               </span>
-              <span className="min-w-0 flex-1 truncate text-ink-muted">
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">
                 {answer.first} + {answer.second}
               </span>
               {/* Only where it adds something: beside a wrong row. */}
               {answer.correct ? null : (
-                <span className="shrink-0 text-ink-faint">{strings.expected(answer.expected)}</span>
+                <span className="shrink-0 text-faint">{strings.expected(answer.expected)}</span>
               )}
             </li>
           ))}
